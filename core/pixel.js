@@ -104,29 +104,28 @@
         if (!canvas) return { x: 0, y: 0 };
 
         const rect = canvas.getBoundingClientRect();
-        const bufferW = canvas.width;
-        const bufferH = canvas.height;
 
-        const relX = (clientX - rect.left) / rect.width;
-        const relY = (rect.bottom - clientY) / rect.height;
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
 
-        return {
-            x: Math.round(relX * bufferW),
-            y: Math.round(relY * bufferH)
-        };
+        const x = Math.floor((clientX - rect.left) * scaleX);
+        const y = Math.floor((rect.bottom - clientY) * scaleY);
+
+        return { x: x, y: y };
     };
 
     BH.bufferToClient = function (canvas, bufX, bufY) {
         if (!canvas) return { clientX: 0, clientY: 0 };
 
         const rect = canvas.getBoundingClientRect();
-        const bufferW = canvas.width;
-        const bufferH = canvas.height;
 
-        return {
-            clientX: rect.left + (bufX / bufferW) * rect.width,
-            clientY: rect.bottom - (bufY / bufferH) * rect.height
-        };
+        const scaleX = rect.width / canvas.width;
+        const scaleY = rect.height / canvas.height;
+
+        const clientX = rect.left + bufX * scaleX;
+        const clientY = rect.bottom - bufY * scaleY;
+
+        return { clientX: clientX, clientY: clientY };
     };
 
     // =========================================================

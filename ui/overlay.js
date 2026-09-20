@@ -181,7 +181,7 @@
         }
 
         renderDelayPreset(el, template);
-        renderSpeedControl(el);
+        renderSpeedDisplay(el);
         renderStartStop(el, template);
         renderTools(el, template);
         renderLog(el);
@@ -272,10 +272,10 @@
     }
 
     // =========================================================
-    // SPEED CONTROL
+    // SPEED DISPLAY (chỉ hiển thị, đổi bằng +/-)
     // =========================================================
 
-    function renderSpeedControl(el) {
+    function renderSpeedDisplay(el) {
         const label = document.createElement('div');
         label.textContent = 'SPEED:';
         Object.assign(label.style, {
@@ -289,37 +289,13 @@
         const row = document.createElement('div');
         row.style.display = 'flex';
         row.style.alignItems = 'center';
-        row.style.flexWrap = 'wrap';
-
-        row.appendChild(makeBtn('[-]', function () {
-            BH.setSpeed(BH.getSpeed() - 1);
-        }, { padding: '3px 7px' }));
 
         const speedSpan = document.createElement('span');
-        speedSpan.textContent = ' ' + BH.getSpeed() + '× ';
+        speedSpan.textContent = BH.getSpeed() + '×  (+/- để đổi)';
         speedSpan.style.color = BH.getSpeed() === 1 ? '#ddd' : '#66ff66';
         speedSpan.style.fontWeight = '700';
         speedSpan.style.fontSize = '12px';
         row.appendChild(speedSpan);
-
-        row.appendChild(makeBtn('[+]', function () {
-            BH.setSpeed(BH.getSpeed() + 1);
-        }, { padding: '3px 7px' }));
-
-        const presets = [1, 2, 3, 5, 10];
-        for (let i = 0; i < presets.length; i++) {
-            const v = presets[i];
-            const isActive = v === BH.getSpeed();
-
-            row.appendChild(makeBtn(v + '×', function () {
-                BH.setSpeed(v);
-            }, {
-                padding: '2px 5px',
-                bg: isActive ? 'rgba(102,255,102,0.25)' : undefined,
-                color: isActive ? '#66ff66' : undefined,
-                border: isActive ? '1px solid #66ff66' : undefined
-            }));
-        }
 
         el.appendChild(row);
     }

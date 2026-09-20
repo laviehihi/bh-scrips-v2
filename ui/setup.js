@@ -6,7 +6,7 @@
 // 2. Marker chưa calibrate → xếp hàng ngang ở dưới
 // 3. Marker đã calibrate → hiện đúng vị trí
 // 4. Kéo marker → magnifier update
-// 5. Thả marker → stable check (5 mẫu × 200ms, click reset trước mỗi mẫu)
+// 5. Thả marker → stable check (5 mẫu × 200ms)
 // 6. Chốt màu → tick xanh
 
 (function (global) {
@@ -19,7 +19,6 @@
     const STABLE_REQUIRED = 3;
     const STABLE_TIMEOUT = 5000;
 
-    // Vị trí marker chưa calibrate — xếp hàng ngang ở dưới
     const ROW_START_X = 60;
     const ROW_START_Y_OFFSET = 100;
     const ROW_SPACING_X = 90;
@@ -48,14 +47,12 @@
             return;
         }
 
-        // Stop auto nếu đang chạy
         if (BH.activeAuto) BH.stopAuto();
 
         BH.setupMode = true;
         BH.isSetupLock = true;
         BH.setupTemplate = template;
 
-        // Load state đã lưu
         const savedState = BH.loadTemplateState(templateId) || {};
 
         const uncalibrated = [];
@@ -67,7 +64,6 @@
             let markerX, markerY, calibrated;
 
             if (savedStep && savedStep.x != null && savedStep.hex) {
-                // Đã calibrate → hiện đúng vị trí
                 step.x = savedStep.x;
                 step.y = savedStep.y;
                 step.hex = savedStep.hex;
@@ -80,7 +76,6 @@
                 markerY = pos.clientY;
                 calibrated = true;
             } else {
-                // Chưa calibrate → xếp hàng
                 step.calibrated = false;
                 uncalibrated.push(step);
                 calibrated = false;
@@ -101,7 +96,6 @@
             attachMarkerEvents(marker, step);
         }
 
-        // Layout marker chưa calibrate
         layoutUncalibratedMarkers(uncalibrated);
 
         BH.setMsg('Setup: kéo markers vào đúng vị trí');
@@ -115,7 +109,6 @@
         BH.setupMode = false;
         BH.isSetupLock = false;
 
-        // Xoá markers
         for (const id in BH.setupMarkers) {
             BH.removeMarker(BH.setupMarkers[id]);
         }
@@ -223,7 +216,6 @@
 
             scheduleMarkerUpdate();
 
-            // Update magnifier
             const canvas = BH.getCanvas();
             if (canvas) {
                 const buf = BH.clientToBuffer(canvas, pendingX, pendingY);
@@ -250,16 +242,21 @@
     }
 
     // =========================================================
-    // STABLE CHECK
+    // STABLE CHECK — giống code mẫu
     // =========================================================
 
     function startStableCheck(marker, step, clientX, clientY) {
         BH.setMarkerState(marker, 'checking');
 
+        if (BH.stableTimerId !== null) {
+            BH.rt.clearTimeout(BH.stableTimerId);
+            BH.stableTimerId = null;
+        }
+
         const samples = [];
         const startTime = BH.rt.now();
 
-        function checkOnce() {
+        function check() {
             if (!BH.setupMode) return;
 
             if (BH.rt.now() - startTime > STABLE_TIMEOUT) {
@@ -269,88 +266,62 @@
             }
 
             const canvas = BH.getCanvas();
-            if (!canvas) {
-                BH.stableTimerId = BH.rt.setTimeout(checkOnce, STABLE_CHECK_INTERVAL);
-                return;
-            }
-
             const gl = BH.getGL(canvas);
-            if (!gl) {
-                BH.stableTimerId = BH.rt.setTimeout(checkOnce, STABLE_CHECK_INTERVAL);
-                return;
-            }
 
-            // Click RESET_POINT để tắt hover
-            BH.resetHover();
-
-            // Chờ 1 nhịp rồi đọc pixel
-            BH.stableTimerId = BH.rt.setTimeout(function () {
-                if (!BH.setupMode) return;
-
+            if (canvas && gl) {
                 const buf = BH.clientToBuffer(canvas, clientX, clientY);
                 const pixel = BH.readPixel(gl, buf.x, buf.y);
 
                 if (pixel) {
-                    samples.push({
-                        hex: BH.rgbToHex(pixel),
-                        buf: buf
-                    });
+                    const hex = BH.rgbToHex(pixel);
+                    samples.push(hex);
+                    if (samples.length > STABLE_SAMPLE_COUNT) samples.shift();
 
                     BH.showMagnifier(buf.x, buf.y);
-                }
 
-                if (samples.length >= STABLE_SAMPLE_COUNT) {
-                    finishStableCheck(marker, step, samples, clientX, clientY);
-                    return;
+                    if (samples.length >= STABLE_SAMPLE_COUNT) {
+                        const counts = {};
+                        for (let i = 0; i < samples.length; i++) {
+                            counts[samples[i]] = (counts[samples[i]] || 0) + 1;
+                        }
+                        let maxCount = 0;
+                        let maxHex = null;
+                        for (const h in counts) {
+                            if (counts[h] > maxCount) {
+                                maxCount = counts[h];
+                                maxHex = h;
+                            }
+                        }
+                        if (maxCount >= STABLE_REQUIRED) {
+                            saveStableColor(marker, step, buf, maxHex, clientX, clientY);
+                            return;
+                        }
+                    }
                 }
+            }
 
-                BH.stableTimerId = BH.rt.setTimeout(checkOnce, STABLE_CHECK_INTERVAL);
-            }, 50);
+            BH.stableTimerId = BH.rt.setTimeout(check, STABLE_CHECK_INTERVAL);
         }
 
-        checkOnce();
+        check();
     }
 
-    function finishStableCheck(marker, step, samples, clientX, clientY) {
-        const counts = {};
-        for (let i = 0; i < samples.length; i++) {
-            const h = samples[i].hex;
-            counts[h] = (counts[h] || 0) + 1;
-        }
-
-        let maxCount = 0;
-        let maxHex = null;
-        for (const h in counts) {
-            if (counts[h] > maxCount) {
-                maxCount = counts[h];
-                maxHex = h;
-            }
-        }
-
-        if (maxCount < STABLE_REQUIRED) {
-            BH.setMsg('⚠ Màu không ổn định — thử lại');
-            BH.setMarkerState(marker, 'pending');
-            return;
-        }
-
-        const canvas = BH.getCanvas();
-        const buf = BH.clientToBuffer(canvas, clientX, clientY);
-
+    function saveStableColor(marker, step, buf, hex, clientX, clientY) {
         step.x = buf.x;
         step.y = buf.y;
-        step.hex = maxHex;
+        step.hex = hex;
         step.tol = 15;
         step.calibrated = true;
 
         saveStepToStorage(step);
 
-        BH.setMarkerState(marker, 'done', maxHex);
+        BH.setMarkerState(marker, 'done', hex);
 
         if (BH.showClickFlash) {
             BH.showClickFlash(clientX, clientY);
         }
 
-        BH.setMsg('✓ Đã lưu ' + step.label + ': ' + maxHex);
+        BH.setMsg('✓ Đã lưu ' + step.label + ': ' + hex);
 
         if (BH.render) BH.render();
     }
