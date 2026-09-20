@@ -1,5 +1,5 @@
 // core/click.js
-// Dispatch click event chain + reset hover + click flash
+// Dispatch click event chain + reset hover + click flash + key press
 
 (function (global) {
     'use strict';
@@ -82,6 +82,40 @@
         fireAll(targets, 'pointerleave', PointerEvent, makePointerOpts(x, y, 0));
         fireAll(targets, 'mouseout', MouseEvent, makeMouseOpts(x, y, 0));
         fireAll(targets, 'mouseleave', MouseEvent, makeMouseOpts(x, y, 0));
+    };
+
+    // =========================================================
+    // DISPATCH KEY PRESS
+    // =========================================================
+
+    BH.dispatchKeyPress = function (key) {
+        const targets = [document, window];
+
+        const keyMap = {
+            'Escape': 27,
+            'Enter': 13,
+            'Space': 32
+        };
+
+        const keyCode = keyMap[key] || 0;
+
+        const opts = {
+            bubbles: true,
+            cancelable: true,
+            composed: true,
+            key: key,
+            code: key,
+            keyCode: keyCode,
+            which: keyCode
+        };
+
+        for (let i = 0; i < targets.length; i++) {
+            try {
+                targets[i].dispatchEvent(new KeyboardEvent('keydown', opts));
+                targets[i].dispatchEvent(new KeyboardEvent('keypress', opts));
+                targets[i].dispatchEvent(new KeyboardEvent('keyup', opts));
+            } catch (e) { }
+        }
     };
 
     // =========================================================

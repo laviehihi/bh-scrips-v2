@@ -228,7 +228,7 @@
         });
         header.innerHTML = `
             <span style="color:#fff;font-weight:700;font-size:${12 * scale}px;letter-spacing:.3px;">BH BOT</span>
-            <span style="color:#777;font-size:${10 * scale}px;">v2.1</span>
+            <span style="color:#777;font-size:${10 * scale}px;">v2.2</span>
         `;
         el.appendChild(header);
 
@@ -237,8 +237,13 @@
         const templateId = BH.activeTemplateId || BH.loadActiveTemplate();
         const template = BH.getTemplate(templateId);
 
-        if (template && template.options && template.options.partySize) {
-            renderPartySizeOption(el, template, isRunning, scale);
+        if (template && template.options) {
+            if (template.options.partySize) {
+                renderPartySizeOption(el, template, isRunning, scale);
+            }
+            if (template.options.duration) {
+                renderDurationOption(el, template, isRunning, scale);
+            }
         }
 
         renderClickDelayPreset(el, template, isRunning, scale);
@@ -276,6 +281,49 @@
             row.appendChild(makeBtn(String(v), function () {
                 const opts = BH.loadTemplateOptions(template.id);
                 opts.partySize = v;
+                BH.saveTemplateOptions(template.id, opts);
+                BH.render();
+            }, {
+                bg: isActive ? 'rgba(112,224,168,0.25)' : undefined,
+                color: isActive ? '#70e0a8' : undefined,
+                border: isActive ? '1px solid #70e0a8' : undefined,
+                disabled: isRunning
+            }));
+        }
+
+        el.appendChild(row);
+    }
+
+    // =========================================================
+    // DURATION OPTION (Inva)
+    // =========================================================
+
+    function renderDurationOption(el, template, isRunning, scale) {
+        const label = document.createElement('div');
+        label.textContent = 'THỜI GIAN CHẠY:';
+        Object.assign(label.style, {
+            color: '#888',
+            fontSize: (9 * scale) + 'px',
+            marginTop: (6 * scale) + 'px',
+            marginBottom: (3 * scale) + 'px'
+        });
+        el.appendChild(label);
+
+        const row = document.createElement('div');
+        row.style.display = 'flex';
+        row.style.flexWrap = 'wrap';
+
+        const options = BH.loadTemplateOptions(template.id);
+        const current = options.duration || template.options.duration.default;
+
+        const values = template.options.duration.values;
+        for (let i = 0; i < values.length; i++) {
+            const v = values[i];
+            const isActive = v === current;
+
+            row.appendChild(makeBtn(v + 's', function () {
+                const opts = BH.loadTemplateOptions(template.id);
+                opts.duration = v;
                 BH.saveTemplateOptions(template.id, opts);
                 BH.render();
             }, {
@@ -528,8 +576,37 @@
             statusLine.style.marginTop = '4px';
             statusLine.style.display = 'flex';
             statusLine.style.alignItems = 'center';
+            statusLine.style.flexWrap = 'wrap';
+            statusLine.style.gap = '4px';
 
-            if (curStep.calibrated) {
+            if (curStep.type === 'toggle') {
+                // Hiện 2 màu
+                const offSpan = document.createElement('span');
+                offSpan.style.color = curStep.hexOff ? '#70e0a8' : '#ffaa33';
+                if (curStep.hexOff) {
+                    offSpan.appendChild(makeColorDot(curStep.hexOff, 10 * scale));
+                }
+                offSpan.textContent = 'TẮT: ' + (curStep.hexOff || '---');
+                statusLine.appendChild(offSpan);
+
+                const onSpan = document.createElement('span');
+                onSpan.style.color = curStep.hexOn ? '#70e0a8' : '#ffaa33';
+                if (curStep.hexOn) {
+                    onSpan.appendChild(makeColorDot(curStep.hexOn, 10 * scale));
+                }
+                onSpan.textContent = 'BẬT: ' + (curStep.hexOn || '---');
+                statusLine.appendChild(onSpan);
+
+                if (BH.setupTogglePhase === 2) {
+                    const phase = document.createElement('div');
+                    phase.style.color = '#ff66cc';
+                    phase.style.fontWeight = '700';
+                    phase.style.marginTop = '4px';
+                    phase.style.fontSize = (10 * scale) + 'px';
+                    phase.textContent = '⚡ Bấm nút auto trong game để BẬT, rồi kéo marker lại';
+                    info.appendChild(phase);
+                }
+            } else if (curStep.calibrated) {
                 statusLine.style.color = '#70e0a8';
                 statusLine.appendChild(makeColorDot(curStep.hex, 10 * scale));
                 const hexSpan = document.createElement('span');
@@ -539,7 +616,10 @@
                 statusLine.style.color = '#ffaa33';
                 statusLine.textContent = '⚠ Chưa setup';
             }
-            info.appendChild(statusLine);
+
+            if (curStep.type !== 'toggle' || BH.setupTogglePhase !== 2) {
+                info.appendChild(statusLine);
+            }
 
             el.appendChild(info);
         }
@@ -651,7 +731,7 @@
     };
 
     // =========================================================
-    // SET MSG — skip nếu giống, update text trực tiếp
+    // SET MSG
     // =========================================================
 
     BH.setMsg = function (msg) {
@@ -661,17 +741,14 @@
 
         if (BH.setupMode || BH.overlayState === 'hidden') return;
 
-        // Compact: không render (không hiển thị log)
         if (BH.overlayState === 'compact') return;
 
-        // Expanded: update text trực tiếp nếu log element tồn tại
         const logEl = BH.overlayEl && BH.overlayEl.querySelector('[data-bh-log]');
         if (logEl) {
             logEl.textContent = msg;
             return;
         }
 
-        // Fallback: re-render
         BH.render();
     };
 

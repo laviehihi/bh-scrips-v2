@@ -237,6 +237,78 @@
         },
 
         // =========================================================
+        // INVA
+        // =========================================================
+
+        inva: {
+            id: 'inva',
+            name: 'Auto Inva',
+            description: 'Auto đánh Inva — bật auto, chạy X giây, ESC',
+            defaultClickDelay: 500,
+
+            options: {
+                duration: {
+                    label: 'Thời gian chạy',
+                    values: [5, 10, 20, 30, 60],
+                    default: 10
+                }
+            },
+
+            steps: [
+                {
+                    id: 'start',
+                    label: 'Start',
+                    hint: 'Nút bắt đầu',
+                    type: 'click',
+                    required: true
+                },
+                {
+                    id: 'confirmTeam',
+                    label: 'Xác nhận team',
+                    hint: 'Nút xác nhận team',
+                    type: 'click',
+                    required: true
+                },
+                {
+                    id: 'yesNo',
+                    label: 'Yes (confirm)',
+                    hint: 'Popup xác nhận khi chưa full (option)',
+                    type: 'optional',
+                    required: false
+                },
+                {
+                    id: 'autoInGame',
+                    label: 'Auto trong trận',
+                    hint: 'Setup 2 màu: TẮT (lần 1) và BẬT (lần 2)',
+                    type: 'toggle',
+                    required: true,
+                    hexOff: null,
+                    hexOn: null
+                },
+                {
+                    id: 'yesLeave',
+                    label: 'Yes rời trận',
+                    hint: 'Xác nhận rời trận sau ESC',
+                    type: 'click',
+                    required: true
+                },
+                {
+                    id: 'returnHome',
+                    label: 'Về thành',
+                    hint: 'Nút về thành sau trận',
+                    type: 'click',
+                    required: true
+                }
+            ],
+
+            flow: {
+                type: 'inva',
+                order: ['start', 'confirmTeam', 'yesNo', 'autoInGame', 'yesLeave', 'returnHome'],
+                loop: true
+            }
+        },
+
+        // =========================================================
         // CUSTOM
         // =========================================================
 

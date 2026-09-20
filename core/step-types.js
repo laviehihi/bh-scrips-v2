@@ -1,10 +1,5 @@
 // core/step-types.js
 // Định nghĩa các loại step
-//
-// Step types hiện có:
-// - click: check pixel → match → click (có delay)
-// - slot: check slot có người (không click)
-// - optional: như click nhưng bỏ qua nếu chưa calibrate
 
 (function (global) {
     'use strict';
@@ -20,7 +15,6 @@
     BH.pendingClick = null;
 
     function scheduleClick(step, delay) {
-        // Nếu đã có pending → bỏ qua, không schedule thêm
         if (BH.pendingClick) return;
 
         const pending = {
@@ -32,7 +26,6 @@
             if (BH.pendingClick !== pending) return;
             BH.pendingClick = null;
 
-            // Check lại pixel trước khi click
             const pixel = BH.readPixelAtBuf(step.x, step.y);
             if (!pixel) return;
 
@@ -115,6 +108,45 @@
     // =========================================================
 
     BH.STEP_TYPES.slot = {
+        check: function () {
+            return false;
+        },
+        action: function () { }
+    };
+
+    // =========================================================
+    // TOGGLE — nút bật/tắt (2 màu)
+    // =========================================================
+
+    BH.STEP_TYPES.toggle = {
+        check: function (step) {
+            if (!step.calibrated) return false;
+            if (!step.hexOff || !step.hexOn) return false;
+
+            const pixel = BH.readPixelAtBuf(step.x, step.y);
+            if (!pixel) return false;
+
+            const tol = step.tol || 15;
+
+            // Match hexOff → auto đang tắt → cần click
+            if (BH.matchHex(pixel, step.hexOff, tol)) {
+                return true;
+            }
+
+            // Match hexOn → auto đã bật → không click
+            return false;
+        },
+
+        action: function (step, delay) {
+            scheduleClick(step, delay);
+        }
+    };
+
+    // =========================================================
+    // KEYPRESS — gửi phím (không click)
+    // =========================================================
+
+    BH.STEP_TYPES.keypress = {
         check: function () {
             return false;
         },
