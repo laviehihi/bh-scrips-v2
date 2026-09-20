@@ -15,7 +15,7 @@
     BH.passthrough = false;
 
     // =========================================================
-    // AUTO-SCALE — theo window.innerWidth
+    // AUTO-SCALE
     // =========================================================
 
     function getOverlayScale() {
@@ -426,10 +426,14 @@
             row.style.gap = (6 * scale) + 'px';
 
             const txt = document.createElement('span');
-            txt.textContent = '🔧 SETUP · ' + (BH.setupTemplate ? BH.setupTemplate.name : '');
+            txt.textContent = '🔧 ' + (BH.setupTemplate ? BH.setupTemplate.name : '');
             txt.style.color = '#ffaa33';
             txt.style.fontWeight = '700';
             txt.style.fontSize = (11 * scale) + 'px';
+            txt.style.whiteSpace = 'nowrap';
+            txt.style.overflow = 'hidden';
+            txt.style.textOverflow = 'ellipsis';
+            txt.style.maxWidth = '120px';
             row.appendChild(txt);
 
             row.appendChild(makeBtn('▲', function () {
@@ -451,7 +455,6 @@
 
         el.innerHTML = '';
 
-        // Header
         const header = document.createElement('div');
         Object.assign(header.style, {
             display: 'flex',
@@ -463,16 +466,24 @@
         });
 
         const headerTitle = document.createElement('span');
-        headerTitle.textContent = '🔧 SETUP · ' + (BH.setupTemplate ? BH.setupTemplate.name : '');
+        headerTitle.textContent = '🔧 ' + (BH.setupTemplate ? BH.setupTemplate.name : '');
         headerTitle.style.color = '#ffaa33';
         headerTitle.style.fontWeight = '700';
         headerTitle.style.fontSize = (12 * scale) + 'px';
         headerTitle.style.flex = '1';
+        headerTitle.style.whiteSpace = 'nowrap';
+        headerTitle.style.overflow = 'hidden';
+        headerTitle.style.textOverflow = 'ellipsis';
+        headerTitle.style.minWidth = '0';
         header.appendChild(headerTitle);
 
         const btnGroup = document.createElement('div');
-        btnGroup.style.display = 'flex';
-        btnGroup.style.gap = '4px';
+        Object.assign(btnGroup.style, {
+            display: 'flex',
+            gap: '4px',
+            flex: 'none',
+            marginLeft: '6px'
+        });
 
         btnGroup.appendChild(makeBtn('─', function () {
             BH.setupCollapsed = true;
@@ -486,7 +497,6 @@
         header.appendChild(btnGroup);
         el.appendChild(header);
 
-        // Step info
         const total = BH.setupTemplate ? BH.setupTemplate.steps.length : 0;
         const curIndex = BH.setupCurrentIndex;
         const curStep = BH.setupTemplate ? BH.setupTemplate.steps[curIndex] : null;
@@ -499,7 +509,6 @@
                 lineHeight: '1.6'
             });
 
-            // Tạo DOM để chèn color dot
             const titleLine = document.createElement('div');
             titleLine.style.color = '#fff';
             titleLine.style.fontWeight = '700';
@@ -534,7 +543,6 @@
             el.appendChild(info);
         }
 
-        // Nav row
         const navRow = document.createElement('div');
         Object.assign(navRow.style, {
             display: 'flex',
@@ -557,7 +565,6 @@
             flex: '1'
         }));
 
-        // Custom: thêm / xoá rule
         if (BH.setupTemplate && BH.setupTemplate.id === 'custom') {
             navRow.appendChild(makeBtn('+ Thêm', function () {
                 BH.setupAddRule();
@@ -581,7 +588,6 @@
 
         el.appendChild(navRow);
 
-        // Progress dots
         const progressRow = document.createElement('div');
         Object.assign(progressRow.style, {
             display: 'flex',

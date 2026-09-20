@@ -242,7 +242,7 @@
 
         custom: {
             id: 'custom',
-            name: 'Custom Rules',
+            name: 'Rules',
             description: 'Tự thêm rules — flex cho mọi tình huống',
             defaultClickDelay: 500,
             steps: [
