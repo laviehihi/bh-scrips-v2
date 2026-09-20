@@ -310,14 +310,26 @@
         marker.addEventListener('mousedown', function (e) {
             if (e.button !== 0) return;
 
-            // Không cho kéo marker đã calibrated
-            if (step.calibrated) return;
-
             e.preventDefault();
             e.stopPropagation();
             e.stopImmediatePropagation();
 
             isDragging = true;
+
+            // Nếu step đã calibrated → reset khi bắt đầu kéo
+            if (step.calibrated) {
+                step.calibrated = false;
+                step.x = null;
+                step.y = null;
+                step.hex = null;
+
+                const templateId = BH.setupTemplate.id;
+                const state = BH.loadTemplateState(templateId) || {};
+                delete state[step.id];
+                BH.saveTemplateState(templateId, state);
+
+                if (BH.render) BH.render();
+            }
 
             BH.setMarkerState(marker, 'dragging');
 
@@ -451,9 +463,7 @@
             BH.showClickFlash(clientX, clientY);
         }
 
-        BH.setMsg('✓ Đã lưu ' + step.label + ': ' + hex);
-
-        // KHÔNG tự động chuyển step
+        BH.setMsg('✓ Đã lưu ' + step.label + ': ' + hex + '. Bấm [Tiếp →] để sang nút sau.');
 
         if (BH.render) BH.render();
     }
