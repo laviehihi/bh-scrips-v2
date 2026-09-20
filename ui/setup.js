@@ -1,13 +1,5 @@
 // ui/setup.js
 // Setup mode — kéo thả marker để calibrate
-//
-// Flow:
-// 1. Vào setup → hiện markers
-// 2. Marker chưa calibrate → xếp hàng ngang ở dưới
-// 3. Marker đã calibrate → hiện đúng vị trí
-// 4. Kéo marker → magnifier update
-// 5. Thả marker → stable check (5 mẫu × 200ms)
-// 6. Chốt màu → tick xanh
 
 (function (global) {
     'use strict';
@@ -29,6 +21,7 @@
     // =========================================================
 
     BH.setupMode = false;
+    BH.setupCollapsed = false;
     BH.setupMarkers = {};
     BH.setupTemplate = null;
     BH.stableTimerId = null;
@@ -40,6 +33,12 @@
     BH.enterSetupMode = function () {
         if (BH.setupMode) return;
 
+        // Không cho setup khi bot đang chạy
+        if (BH.activeAuto) {
+            BH.setMsg('⚠ Tắt bot trước khi setup');
+            return;
+        }
+
         const templateId = BH.activeTemplateId || BH.loadActiveTemplate();
         const template = BH.getTemplate(templateId);
         if (!template) {
@@ -47,9 +46,8 @@
             return;
         }
 
-        if (BH.activeAuto) BH.stopAuto();
-
         BH.setupMode = true;
+        BH.setupCollapsed = false;
         BH.isSetupLock = true;
         BH.setupTemplate = template;
 
@@ -107,6 +105,7 @@
         if (!BH.setupMode) return;
 
         BH.setupMode = false;
+        BH.setupCollapsed = false;
         BH.isSetupLock = false;
 
         for (const id in BH.setupMarkers) {
@@ -233,11 +232,11 @@
 
             marker.style.cursor = 'move';
 
-            const rect = marker.getBoundingClientRect();
-            const centerX = rect.left + rect.width / 2;
-            const centerY = rect.top + rect.height / 2;
+            // Force update marker position với giá trị pending mới nhất
+            marker.style.left = pendingX + 'px';
+            marker.style.top = pendingY + 'px';
 
-            startStableCheck(marker, step, centerX, centerY);
+            startStableCheck(marker, step, pendingX, pendingY);
         }, true);
     }
 

@@ -24,7 +24,7 @@
             id: 'rerun',
             name: 'Auto Rerun',
             description: 'Click nút Rerun khi hiện',
-            defaultInterval: 300,
+            defaultClickDelay: 500,
             steps: [
                 {
                     id: 'rerun',
@@ -49,7 +49,7 @@
             id: 'pvp',
             name: 'Auto PvP',
             description: 'Auto đánh PvP',
-            defaultInterval: 1000,
+            defaultClickDelay: 500,
             steps: [
                 {
                     id: 'start',
@@ -102,7 +102,7 @@
             id: 'tg',
             name: 'Auto TG',
             description: 'Auto đánh TG',
-            defaultInterval: 1000,
+            defaultClickDelay: 500,
             steps: [
                 {
                     id: 'start',
@@ -148,7 +148,7 @@
             id: 'wb',
             name: 'Auto WB',
             description: 'Auto đánh World Boss (solo + team)',
-            defaultInterval: 2000,
+            defaultClickDelay: 500,
 
             options: {
                 partySize: {
@@ -158,15 +158,12 @@
                 }
             },
 
-            // Config cố định cho WB
             config: {
-                // Màu slot không thuộc party (WB max < 5)
                 disabledHex: '#384250',
                 tol: 15
             },
 
             steps: [
-                // 5 slot đếm người
                 {
                     id: 'slot1',
                     label: 'Slot 1',
@@ -202,8 +199,6 @@
                     type: 'slot',
                     required: false
                 },
-
-                // Nút hành động
                 {
                     id: 'start',
                     label: 'Start (chủ key)',
@@ -250,17 +245,15 @@
         },
 
         // =========================================================
-        // CUSTOM — user tự thêm rules
+        // CUSTOM
         // =========================================================
 
         custom: {
             id: 'custom',
             name: 'Custom Rules',
             description: 'Tự thêm rules — flex cho mọi tình huống',
-            defaultInterval: 1000,
-            steps: [
-                // User tự thêm qua UI
-            ],
+            defaultClickDelay: 500,
+            steps: [],
             flow: {
                 type: 'sequential',
                 order: [],

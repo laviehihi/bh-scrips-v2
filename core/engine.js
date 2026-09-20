@@ -6,6 +6,8 @@
 
     const BH = global.__BH__ = global.__BH__ || {};
 
+    const SCAN_INTERVAL = 300;
+
     // =========================================================
     // STATE
     // =========================================================
@@ -37,14 +39,15 @@
             return;
         }
 
+        // Lấy click delay từ options (user đổi) hoặc default
+        const options = BH.loadTemplateOptions(template.id);
+        const clickDelay = options.clickDelay || template.defaultClickDelay || 500;
+
         const matched = flowHandler(template, function (step) {
             const stepHandler = BH.STEP_TYPES[step.type || 'click'];
             if (!stepHandler) return;
 
-            stepHandler.action(step);
-
-            BH.lastActionTime = BH.rt.now();
-            BH.setMsg(BH.nowTime() + ' • ' + step.label + ' → CLICK');
+            stepHandler.action(step, clickDelay);
         });
 
         if (!matched) {
@@ -92,15 +95,22 @@
         BH.activeTemplateId = templateId;
         BH.lastActionTime = BH.rt.now();
 
-        const options = BH.loadTemplateOptions(templateId);
-        const interval = options.interval || template.defaultInterval;
-
         BH.autoStopTimerId = BH.rt.setInterval(BH.checkAutoStop, 5000);
-        BH.checkTimerId = BH.rt.setInterval(BH.doCheck, interval);
+        BH.checkTimerId = BH.rt.setInterval(BH.doCheck, SCAN_INTERVAL);
 
         BH.doCheck();
 
-        BH.setMsg(template.name + ' started · ' + (interval / 1000) + 's');
+        const options = BH.loadTemplateOptions(templateId);
+        const clickDelay = options.clickDelay || template.defaultClickDelay || 500;
+
+        BH.setMsg(template.name + ' started · scan 0.3s · click delay ' + (clickDelay / 1000) + 's');
+
+        // Thu nhỏ overlay khi bắt đầu
+        if (BH.overlayState === 'expanded') {
+            BH.overlayState = 'compact';
+        }
+
+        if (BH.render) BH.render();
     };
 
     BH.stopAuto = function () {
@@ -119,6 +129,11 @@
             BH.autoStopTimerId = null;
         }
 
+        // Clear pending click
+        if (BH.clearPendingClick) {
+            BH.clearPendingClick();
+        }
+
         BH.setMsg(stopped.toUpperCase() + ' stopped');
     };
 
@@ -131,28 +146,23 @@
     };
 
     // =========================================================
-    // SET DELAY (interval) CHO TEMPLATE
+    // SET CLICK DELAY CHO TEMPLATE
     // =========================================================
 
-    BH.setTemplateInterval = function (templateId, ms) {
+    BH.setTemplateClickDelay = function (templateId, ms) {
         const options = BH.loadTemplateOptions(templateId);
-        options.interval = ms;
+        options.clickDelay = ms;
         BH.saveTemplateOptions(templateId, options);
-
-        if (BH.activeAuto === templateId) {
-            BH.stopAuto();
-            BH.startAuto(templateId);
-        }
 
         if (BH.render) BH.render();
     };
 
-    BH.getTemplateInterval = function (templateId) {
+    BH.getTemplateClickDelay = function (templateId) {
         const template = BH.getTemplate(templateId);
-        if (!template) return 3000;
+        if (!template) return 500;
 
         const options = BH.loadTemplateOptions(templateId);
-        return options.interval || template.defaultInterval;
+        return options.clickDelay || template.defaultClickDelay || 500;
     };
 
 })(window);

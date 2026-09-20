@@ -6,7 +6,7 @@
 
     const BH = global.__BH__ = global.__BH__ || {};
 
-    BH.renderTemplatePicker = function (container) {
+    BH.renderTemplatePicker = function (container, isRunning) {
         const label = document.createElement('div');
         label.textContent = 'TEMPLATE:';
         Object.assign(label.style, {
@@ -28,15 +28,20 @@
             borderRadius: '4px',
             fontFamily: 'inherit',
             fontSize: '11px',
-            cursor: 'pointer',
+            cursor: isRunning ? 'not-allowed' : 'pointer',
             boxSizing: 'border-box',
-            pointerEvents: 'auto',
+            pointerEvents: isRunning ? 'none' : 'auto',
             userSelect: 'auto',
             WebkitUserSelect: 'auto',
             MozUserSelect: 'auto',
             position: 'relative',
-            zIndex: '1'
+            zIndex: '1',
+            opacity: isRunning ? '0.4' : '1'
         });
+
+        if (isRunning) {
+            select.disabled = true;
+        }
 
         const templateId = BH.activeTemplateId || BH.loadActiveTemplate();
 
@@ -62,7 +67,6 @@
             BH.render();
         });
 
-        // Chặn event bubble lên overlay
         select.addEventListener('mousedown', function (e) {
             e.stopPropagation();
         });
