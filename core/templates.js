@@ -279,11 +279,9 @@
                 {
                     id: 'autoInGame',
                     label: 'Auto trong trận',
-                    hint: 'Setup 2 màu: TẮT (lần 1) và BẬT (lần 2)',
-                    type: 'toggle',
-                    required: true,
-                    hexOff: null,
-                    hexOn: null
+                    hint: 'Chụp màu nút auto khi auto ĐANG TẮT',
+                    type: 'click',
+                    required: true
                 },
                 {
                     id: 'yesLeave',

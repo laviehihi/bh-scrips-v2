@@ -1,5 +1,5 @@
 // ui/setup.js
-// Setup mode — setup từng nút một, hỗ trợ custom template + toggle 2 màu
+// Setup mode — setup từng nút một, user bấm Tiếp để sang nút sau
 
 (function (global) {
     'use strict';
@@ -21,9 +21,6 @@
     BH.setupMarker = null;
     BH.setupTemplate = null;
     BH.stableTimerId = null;
-
-    // Toggle: phase 1 (chụp hexOff) hoặc phase 2 (chụp hexOn)
-    BH.setupTogglePhase = 1;
 
     // =========================================================
     // ENTER / EXIT
@@ -64,8 +61,6 @@
             }
         }
 
-        BH.setupTogglePhase = 1;
-
         showCurrentMarker();
 
         BH.setMsg('Setup: kéo marker vào ' + template.steps[BH.setupCurrentIndex].label);
@@ -83,7 +78,6 @@
         BH.setupMode = false;
         BH.setupCollapsed = false;
         BH.isSetupLock = false;
-        BH.setupTogglePhase = 1;
 
         if (BH.setupMarker) {
             BH.removeMarker(BH.setupMarker);
@@ -121,7 +115,6 @@
         if (BH.setupCurrentIndex <= 0) return;
 
         BH.setupCurrentIndex--;
-        BH.setupTogglePhase = 1;
         showCurrentMarker();
         BH.setMsg('Nút ' + (BH.setupCurrentIndex + 1) + ': ' + BH.setupTemplate.steps[BH.setupCurrentIndex].label);
         if (BH.render) BH.render();
@@ -132,9 +125,34 @@
         if (BH.setupCurrentIndex >= BH.setupTemplate.steps.length - 1) return;
 
         BH.setupCurrentIndex++;
-        BH.setupTogglePhase = 1;
         showCurrentMarker();
         BH.setMsg('Nút ' + (BH.setupCurrentIndex + 1) + ': ' + BH.setupTemplate.steps[BH.setupCurrentIndex].label);
+        if (BH.render) BH.render();
+    };
+
+    // =========================================================
+    // RESET CURRENT STEP
+    // =========================================================
+
+    BH.setupResetCurrent = function () {
+        if (!BH.setupTemplate) return;
+
+        const step = BH.setupTemplate.steps[BH.setupCurrentIndex];
+        if (!step) return;
+
+        step.calibrated = false;
+        step.x = null;
+        step.y = null;
+        step.hex = null;
+
+        const templateId = BH.setupTemplate.id;
+        const state = BH.loadTemplateState(templateId) || {};
+        delete state[step.id];
+        BH.saveTemplateState(templateId, state);
+
+        showCurrentMarker();
+
+        BH.setMsg('Đã reset ' + step.label);
         if (BH.render) BH.render();
     };
 
@@ -161,7 +179,6 @@
         BH.setupTemplate.flow.order = steps.map(function (s) { return s.id; });
 
         BH.setupCurrentIndex = steps.length - 1;
-        BH.setupTogglePhase = 1;
         showCurrentMarker();
 
         BH.setMsg('Đã thêm Rule ' + newIndex);
@@ -212,7 +229,6 @@
         }
 
         BH.setupCurrentIndex = Math.max(0, Math.min(BH.setupCurrentIndex, steps.length - 1));
-        BH.setupTogglePhase = 1;
 
         showCurrentMarker();
 
@@ -293,6 +309,10 @@
 
         marker.addEventListener('mousedown', function (e) {
             if (e.button !== 0) return;
+
+            // Không cho kéo marker đã calibrated
+            if (step.calibrated) return;
+
             e.preventDefault();
             e.stopPropagation();
             e.stopImmediatePropagation();
@@ -416,18 +436,7 @@
         check();
     }
 
-    // =========================================================
-    // SAVE STABLE COLOR
-    // =========================================================
-
     function saveStableColor(marker, step, buf, hex, clientX, clientY) {
-        // Toggle step: cần 2 phase
-        if (step.type === 'toggle') {
-            handleToggleSave(marker, step, buf, hex, clientX, clientY);
-            return;
-        }
-
-        // Các type khác: 1 phase
         step.x = buf.x;
         step.y = buf.y;
         step.hex = hex;
@@ -444,82 +453,7 @@
 
         BH.setMsg('✓ Đã lưu ' + step.label + ': ' + hex);
 
-        const nextIndex = BH.setupCurrentIndex + 1;
-        if (nextIndex < BH.setupTemplate.steps.length) {
-            BH.rt.setTimeout(function () {
-                if (!BH.setupMode) return;
-                BH.setupCurrentIndex = nextIndex;
-                BH.setupTogglePhase = 1;
-                showCurrentMarker();
-                BH.setMsg('Nút ' + (nextIndex + 1) + ': ' + BH.setupTemplate.steps[nextIndex].label);
-                if (BH.render) BH.render();
-            }, 800);
-        } else {
-            BH.setMsg('✓ Đã setup xong tất cả nút!');
-        }
-
-        if (BH.render) BH.render();
-    }
-
-    // =========================================================
-    // TOGGLE HANDLING (2 màu)
-    // =========================================================
-
-    function handleToggleSave(marker, step, buf, hex, clientX, clientY) {
-        if (BH.setupTogglePhase === 1) {
-            // Phase 1: lưu hexOff (màu khi auto TẮT)
-            step.x = buf.x;
-            step.y = buf.y;
-            step.hexOff = hex;
-            step.hexOn = null;
-            step.tol = 15;
-            step.calibrated = false;
-
-            saveStepToStorage(step);
-
-            if (BH.showClickFlash) {
-                BH.showClickFlash(clientX, clientY);
-            }
-
-            BH.setMsg('✓ Đã lưu màu TẮT: ' + hex + '. Bấm nút auto trong game để BẬT, rồi kéo marker lại.');
-
-            // Giữ marker tại vị trí, chuyển phase 2
-            BH.setupTogglePhase = 2;
-
-            // Marker state: về pending (chờ chụp phase 2)
-            BH.setMarkerState(marker, 'pending');
-
-            if (BH.render) BH.render();
-            return;
-        }
-
-        // Phase 2: lưu hexOn (màu khi auto BẬT)
-        step.hexOn = hex;
-        step.calibrated = true;
-
-        saveStepToStorage(step);
-
-        BH.setMarkerState(marker, 'done', hex);
-
-        if (BH.showClickFlash) {
-            BH.showClickFlash(clientX, clientY);
-        }
-
-        BH.setMsg('✓ Đã lưu màu BẬT: ' + hex);
-
-        const nextIndex = BH.setupCurrentIndex + 1;
-        if (nextIndex < BH.setupTemplate.steps.length) {
-            BH.rt.setTimeout(function () {
-                if (!BH.setupMode) return;
-                BH.setupCurrentIndex = nextIndex;
-                BH.setupTogglePhase = 1;
-                showCurrentMarker();
-                BH.setMsg('Nút ' + (nextIndex + 1) + ': ' + BH.setupTemplate.steps[nextIndex].label);
-                if (BH.render) BH.render();
-            }, 800);
-        } else {
-            BH.setMsg('✓ Đã setup xong tất cả nút!');
-        }
+        // KHÔNG tự động chuyển step
 
         if (BH.render) BH.render();
     }
@@ -536,8 +470,6 @@
             x: step.x,
             y: step.y,
             hex: step.hex,
-            hexOff: step.hexOff,
-            hexOn: step.hexOn,
             tol: step.tol,
             calibrated: step.calibrated
         };
@@ -546,7 +478,7 @@
     }
 
     // =========================================================
-    // RESET STEP
+    // RESET STEP (từ bên ngoài)
     // =========================================================
 
     BH.resetStep = function (stepId) {
@@ -559,15 +491,11 @@
         step.x = null;
         step.y = null;
         step.hex = null;
-        step.hexOff = null;
-        step.hexOn = null;
 
         const templateId = BH.setupTemplate.id;
         const state = BH.loadTemplateState(templateId) || {};
         delete state[stepId];
         BH.saveTemplateState(templateId, state);
-
-        BH.setupTogglePhase = 1;
 
         BH.setMsg('Reset ' + step.label);
         if (BH.render) BH.render();

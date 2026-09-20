@@ -41,7 +41,6 @@
         const partySize = options.partySize || 1;
         BH.wbPartySize = partySize;
 
-        // Solo → không check slot
         if (partySize === 1) {
             BH.wbCurrentPlayers = 1;
             return checkNonSlotSteps(template, onMatch);
@@ -133,21 +132,21 @@
     };
 
     // =========================================================
-    // INVA — flow riêng với ESC + duration
+    // INVA
     // =========================================================
 
     BH.FLOW_TYPES.inva = function (template, onMatch) {
         const options = BH.loadTemplateOptions(template.id);
         const duration = options.duration || 10;
 
-        // Reset state nếu chưa bắt đầu
-        if (BH.invaAutoClickedAt == null) {
-            BH.invaAutoClickedAt = 0;
+        // Reset state lần đầu
+        if (BH.invaAutoCheckedAt == null) {
+            BH.invaAutoCheckedAt = 0;
             BH.invaEscSent = false;
         }
 
-        // Phase 1: chưa click auto → check steps trước auto
-        if (!BH.invaAutoClickedAt) {
+        // Phase 1: chưa check auto → check steps trước auto
+        if (!BH.invaAutoCheckedAt) {
             const beforeAuto = ['start', 'confirmTeam', 'yesNo'];
 
             for (let i = 0; i < beforeAuto.length; i++) {
@@ -160,17 +159,16 @@
 
                 if (handler.check(step)) {
                     onMatch(step);
-                    return true;
-                }
-            }
 
-            // Check step auto
-            const autoStep = BH.getStep(template, 'autoInGame');
-            if (autoStep && autoStep.calibrated) {
-                const handler = BH.STEP_TYPES[autoStep.type || 'click'];
-                if (handler && handler.check(autoStep)) {
-                    onMatch(autoStep);
-                    BH.invaAutoClickedAt = BH.rt.now();
+                    // Sau khi click confirmTeam hoặc yesNo → đợi 1s check auto
+                    if (step.id === 'confirmTeam' || step.id === 'yesNo') {
+                        BH.rt.setTimeout(function () {
+                            if (BH.activeAuto === template.id) {
+                                checkAutoAndStartTimer(template);
+                            }
+                        }, 1000);
+                    }
+
                     return true;
                 }
             }
@@ -178,8 +176,8 @@
             return false;
         }
 
-        // Phase 2: đã click auto → đếm X giây
-        const elapsed = BH.rt.now() - BH.invaAutoClickedAt;
+        // Phase 2: đã check auto → đếm X giây
+        const elapsed = BH.rt.now() - BH.invaAutoCheckedAt;
 
         if (elapsed < duration * 1000) {
             const remain = Math.ceil((duration * 1000 - elapsed) / 1000);
@@ -187,7 +185,7 @@
             return false;
         }
 
-        // Phase 3: hết X giây → gửi ESC (1 lần)
+        // Phase 3: hết X giây → gửi ESC
         if (!BH.invaEscSent) {
             BH.dispatchKeyPress('Escape');
             BH.invaEscSent = true;
@@ -216,10 +214,9 @@
             if (handler.check(step)) {
                 onMatch(step);
 
-                // Nếu là returnHome → reset state cho vòng sau
                 if (step.id === 'returnHome') {
                     BH.rt.setTimeout(function () {
-                        BH.invaAutoClickedAt = 0;
+                        BH.invaAutoCheckedAt = 0;
                         BH.invaEscSent = false;
                     }, 3000);
                 }
@@ -230,6 +227,32 @@
 
         return false;
     };
+
+    // =========================================================
+    // CHECK AUTO AND START TIMER
+    // =========================================================
+
+    function checkAutoAndStartTimer(template) {
+        const autoStep = BH.getStep(template, 'autoInGame');
+
+        if (autoStep && autoStep.calibrated) {
+            const pixel = BH.readPixelAtBuf(autoStep.x, autoStep.y);
+            const tol = autoStep.tol || 15;
+
+            if (pixel && BH.matchHex(pixel, autoStep.hex, tol)) {
+                // Auto đang tắt → click để bật
+                BH.clickAtBuf(autoStep.x, autoStep.y);
+                BH.setMsg('Đã bật auto');
+            } else {
+                BH.setMsg('Auto đã bật sẵn — bắt đầu đếm');
+            }
+        }
+
+        // Bắt đầu đếm dù có click hay không
+        BH.invaAutoCheckedAt = BH.rt.now();
+
+        if (BH.render) BH.render();
+    }
 
     // =========================================================
     // GET STEP
