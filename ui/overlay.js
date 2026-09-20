@@ -127,14 +127,6 @@
         nameSpan.style.fontWeight = '700';
         row.appendChild(nameSpan);
 
-        const speedSpan = document.createElement('span');
-        speedSpan.textContent = BH.getSpeed() + '×';
-        speedSpan.style.color = BH.getSpeed() === 1 ? '#ddd' : '#66ff66';
-        speedSpan.style.fontWeight = '700';
-        speedSpan.style.paddingLeft = '6px';
-        speedSpan.style.borderLeft = '1px solid rgba(255,255,255,.15)';
-        row.appendChild(speedSpan);
-
         const expandBtn = makeBtn('▼', function () {
             BH.overlayState = 'expanded';
             BH.render();
@@ -272,7 +264,7 @@
     }
 
     // =========================================================
-    // SPEED DISPLAY (chỉ hiển thị, đổi bằng +/-)
+    // SPEED DISPLAY (chỉ hiển thị)
     // =========================================================
 
     function renderSpeedDisplay(el) {
@@ -291,7 +283,7 @@
         row.style.alignItems = 'center';
 
         const speedSpan = document.createElement('span');
-        speedSpan.textContent = BH.getSpeed() + '×  (+/- để đổi)';
+        speedSpan.textContent = BH.getSpeed() + '×';
         speedSpan.style.color = BH.getSpeed() === 1 ? '#ddd' : '#66ff66';
         speedSpan.style.fontWeight = '700';
         speedSpan.style.fontSize = '12px';
