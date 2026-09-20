@@ -17,8 +17,8 @@
 
     BH.setupMode = false;
     BH.setupCollapsed = false;
-    BH.setupCurrentIndex = 0;   // step đang setup
-    BH.setupMarker = null;      // chỉ có 1 marker tại 1 thời điểm
+    BH.setupCurrentIndex = 0;
+    BH.setupMarker = null;
     BH.setupTemplate = null;
     BH.stableTimerId = null;
 
@@ -51,10 +51,8 @@
         BH.isSetupLock = true;
         BH.setupTemplate = template;
 
-        // Load calibration
         BH.loadCalibration(templateId);
 
-        // Bắt đầu từ step đầu tiên chưa calibrate
         BH.setupCurrentIndex = 0;
         for (let i = 0; i < template.steps.length; i++) {
             if (!template.steps[i].calibrated) {
@@ -144,13 +142,11 @@
         let markerX, markerY;
 
         if (step.calibrated) {
-            // Đã calibrate → hiện tại vị trí
             const canvas = BH.getCanvas();
             const pos = canvas ? BH.bufferToClient(canvas, step.x, step.y) : { clientX: 0, clientY: 0 };
             markerX = pos.clientX;
             markerY = pos.clientY;
         } else {
-            // Chưa calibrate → hiện ở giữa màn hình
             markerX = window.innerWidth / 2;
             markerY = window.innerHeight / 2;
         }
@@ -168,6 +164,13 @@
 
         BH.setupMarker = marker;
         attachMarkerEvents(marker, step);
+
+        // Hiện kính lúp tại vị trí marker
+        const canvas = BH.getCanvas();
+        if (canvas) {
+            const buf = BH.clientToBuffer(canvas, markerX, markerY);
+            BH.showMagnifier(buf.x, buf.y, markerX, markerY);
+        }
     }
 
     // =========================================================
@@ -230,7 +233,7 @@
             const canvas = BH.getCanvas();
             if (canvas) {
                 const buf = BH.clientToBuffer(canvas, pendingX, pendingY);
-                BH.showMagnifier(buf.x, buf.y);
+                BH.showMagnifier(buf.x, buf.y, pendingX, pendingY);
             }
         }, true);
 
@@ -287,7 +290,7 @@
                     samples.push(hex);
                     if (samples.length > STABLE_SAMPLE_COUNT) samples.shift();
 
-                    BH.showMagnifier(buf.x, buf.y);
+                    BH.showMagnifier(buf.x, buf.y, clientX, clientY);
 
                     if (samples.length >= STABLE_SAMPLE_COUNT) {
                         const counts = {};
@@ -333,7 +336,7 @@
 
         BH.setMsg('✓ Đã lưu ' + step.label + ': ' + hex);
 
-        // Tự động chuyển sang step tiếp theo nếu còn
+        // Tự động chuyển sang step tiếp
         const nextIndex = BH.setupCurrentIndex + 1;
         if (nextIndex < BH.setupTemplate.steps.length) {
             BH.rt.setTimeout(function () {
@@ -370,7 +373,7 @@
     }
 
     // =========================================================
-    // RESET STEP (từ overlay)
+    // RESET STEP
     // =========================================================
 
     BH.resetStep = function (stepId) {

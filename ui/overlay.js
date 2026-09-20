@@ -1,5 +1,5 @@
 // ui/overlay.js
-// Overlay chính — compact / expanded / setup / test
+// Overlay chính — compact / expanded / setup
 // Auto-scale theo canvas size
 
 (function (global) {
@@ -86,14 +86,14 @@
         const isDisabled = opts.disabled === true;
 
         Object.assign(btn.style, {
-            padding: opts.padding || '4px 8px',
-            margin: '2px',
+            padding: opts.padding || '3px 6px',
+            margin: '1px',
             background: opts.bg || 'rgba(255,255,255,0.08)',
             color: opts.color || '#ddd',
             border: opts.border || '1px solid rgba(255,255,255,0.15)',
-            borderRadius: '4px',
+            borderRadius: '3px',
             fontFamily: 'inherit',
-            fontSize: opts.fontSize || '10px',
+            fontSize: opts.fontSize || '9px',
             cursor: isDisabled ? 'not-allowed' : 'pointer',
             transition: 'background .15s',
             pointerEvents: isDisabled ? 'none' : 'auto',
@@ -170,7 +170,6 @@
             row.appendChild(countSpan);
         }
 
-        // Speed
         const speedSpan = document.createElement('span');
         speedSpan.textContent = BH.getSpeed() + '×';
         speedSpan.style.color = BH.getSpeed() === 1 ? '#ddd' : '#66ff66';
@@ -182,7 +181,7 @@
         const expandBtn = makeBtn('▼', function () {
             BH.overlayState = 'expanded';
             BH.render();
-        }, { padding: '2px 6px' });
+        }, { padding: '2px 6px', fontSize: '10px' });
         row.appendChild(expandBtn);
 
         el.appendChild(row);
@@ -195,7 +194,7 @@
     function renderExpanded() {
         const el = BH.overlayEl;
         const scale = applyScale(el);
-        el.style.width = (270 * scale) + 'px';
+        el.style.width = (240 * scale) + 'px';
         el.style.padding = (10 * scale) + 'px ' + (12 * scale) + 'px';
         el.style.borderColor = 'rgba(255,255,255,0.12)';
 
@@ -241,9 +240,9 @@
         label.textContent = 'SỐ NGƯỜI:';
         Object.assign(label.style, {
             color: '#888',
-            fontSize: (10 * scale) + 'px',
-            marginTop: (8 * scale) + 'px',
-            marginBottom: (4 * scale) + 'px'
+            fontSize: (9 * scale) + 'px',
+            marginTop: (6 * scale) + 'px',
+            marginBottom: (3 * scale) + 'px'
         });
         el.appendChild(label);
 
@@ -288,9 +287,9 @@
         label.textContent = 'DELAY CLICK:';
         Object.assign(label.style, {
             color: '#888',
-            fontSize: (10 * scale) + 'px',
-            marginTop: (8 * scale) + 'px',
-            marginBottom: (4 * scale) + 'px'
+            fontSize: (9 * scale) + 'px',
+            marginTop: (6 * scale) + 'px',
+            marginBottom: (3 * scale) + 'px'
         });
         el.appendChild(label);
 
@@ -319,7 +318,7 @@
     }
 
     // =========================================================
-    // START/STOP + TOOLS (gộp)
+    // START/STOP + TOOLS (1 dòng)
     // =========================================================
 
     function renderStartStopTools(el, template, scale) {
@@ -327,35 +326,36 @@
 
         const row = document.createElement('div');
         Object.assign(row.style, {
-            marginTop: (10 * scale) + 'px',
-            paddingTop: (8 * scale) + 'px',
+            marginTop: (8 * scale) + 'px',
+            paddingTop: (6 * scale) + 'px',
             borderTop: '1px solid rgba(255,255,255,.1)',
             display: 'flex',
             flexWrap: 'wrap',
-            alignItems: 'center'
+            alignItems: 'center',
+            gap: '2px'
         });
 
         const isRunning = BH.activeAuto === template.id;
 
         if (isRunning) {
-            row.appendChild(makeBtn('[⏸ DỪNG]', function () {
+            row.appendChild(makeBtn('[DỪNG]', function () {
                 BH.stopAuto();
             }, {
                 bg: 'rgba(255,153,102,0.2)',
                 color: '#ff9966',
                 border: '1px solid #ff9966',
-                padding: '6px 12px',
-                fontSize: '11px'
+                padding: '4px 8px',
+                fontSize: '10px'
             }));
         } else {
-            row.appendChild(makeBtn('[▶ BẮT ĐẦU]', function () {
+            row.appendChild(makeBtn('[BẮT ĐẦU]', function () {
                 BH.startAuto(template.id);
             }, {
                 bg: 'rgba(112,224,168,0.2)',
                 color: '#70e0a8',
                 border: '1px solid #70e0a8',
-                padding: '6px 12px',
-                fontSize: '11px'
+                padding: '4px 8px',
+                fontSize: '10px'
             }));
         }
 
@@ -363,16 +363,8 @@
             BH.toggleSetupMode();
         }, {
             disabled: isRunning,
-            padding: '6px 10px',
-            fontSize: '11px'
-        }));
-
-        row.appendChild(makeBtn('[Test]', function () {
-            BH.toggleTestMode();
-        }, {
-            disabled: isRunning,
-            padding: '6px 10px',
-            fontSize: '11px'
+            padding: '4px 8px',
+            fontSize: '10px'
         }));
 
         el.appendChild(row);
@@ -385,11 +377,11 @@
     function renderLog(el, scale) {
         const log = document.createElement('div');
         Object.assign(log.style, {
-            marginTop: (8 * scale) + 'px',
-            paddingTop: (6 * scale) + 'px',
+            marginTop: (6 * scale) + 'px',
+            paddingTop: (4 * scale) + 'px',
             borderTop: '1px solid rgba(255,255,255,.1)',
             color: '#9aa',
-            fontSize: (10 * scale) + 'px',
+            fontSize: (9 * scale) + 'px',
             whiteSpace: 'nowrap',
             overflow: 'hidden',
             textOverflow: 'ellipsis'
@@ -406,7 +398,6 @@
         const el = BH.overlayEl;
         const scale = applyScale(el);
 
-        // Thu gọn
         if (BH.setupCollapsed) {
             el.style.width = 'auto';
             el.style.padding = (6 * scale) + 'px ' + (10 * scale) + 'px';
@@ -439,13 +430,12 @@
             return;
         }
 
-        el.style.width = (240 * scale) + 'px';
+        el.style.width = (220 * scale) + 'px';
         el.style.padding = (10 * scale) + 'px ' + (12 * scale) + 'px';
         el.style.borderColor = '#ffaa33';
 
         el.innerHTML = '';
 
-        // Header + nút
         const header = document.createElement('div');
         Object.assign(header.style, {
             display: 'flex',
@@ -480,7 +470,6 @@
         header.appendChild(btnGroup);
         el.appendChild(header);
 
-        // Current step info
         const total = BH.setupTemplate ? BH.setupTemplate.steps.length : 0;
         const curIndex = BH.setupCurrentIndex;
         const curStep = BH.setupTemplate ? BH.setupTemplate.steps[curIndex] : null;
@@ -508,7 +497,6 @@
             el.appendChild(info);
         }
 
-        // Nav buttons
         const navRow = document.createElement('div');
         Object.assign(navRow.style, {
             display: 'flex',
@@ -532,7 +520,6 @@
 
         el.appendChild(navRow);
 
-        // Progress dots
         const progressRow = document.createElement('div');
         Object.assign(progressRow.style, {
             display: 'flex',
@@ -568,195 +555,6 @@
     }
 
     // =========================================================
-    // RENDER TEST PANEL
-    // =========================================================
-
-    function renderTestPanel() {
-        const el = BH.overlayEl;
-        const scale = applyScale(el);
-
-        if (BH.testCollapsed) {
-            el.style.width = 'auto';
-            el.style.padding = (6 * scale) + 'px ' + (10 * scale) + 'px';
-            el.style.borderColor = '#ff66cc';
-
-            el.innerHTML = '';
-
-            const row = document.createElement('div');
-            row.style.display = 'flex';
-            row.style.alignItems = 'center';
-            row.style.gap = (6 * scale) + 'px';
-
-            const txt = document.createElement('span');
-            txt.textContent = '🧪 TEST';
-            txt.style.color = '#ff66cc';
-            txt.style.fontWeight = '700';
-            txt.style.fontSize = (11 * scale) + 'px';
-            row.appendChild(txt);
-
-            row.appendChild(makeBtn('▲', function () {
-                BH.testCollapsed = false;
-                BH.render();
-            }, { padding: '2px 6px', color: '#ff66cc', border: '1px solid #ff66cc' }));
-
-            row.appendChild(makeBtn('×', function () {
-                BH.exitTestMode();
-            }, { padding: '2px 6px', color: '#ff6666', border: '1px solid #ff6666' }));
-
-            el.appendChild(row);
-            return;
-        }
-
-        el.style.width = (280 * scale) + 'px';
-        el.style.padding = (10 * scale) + 'px ' + (12 * scale) + 'px';
-        el.style.borderColor = '#ff66cc';
-
-        el.innerHTML = '';
-
-        // Header + nút
-        const header = document.createElement('div');
-        Object.assign(header.style, {
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            marginBottom: (8 * scale) + 'px',
-            paddingBottom: (6 * scale) + 'px',
-            borderBottom: '1px solid rgba(255,102,204,.3)'
-        });
-
-        const headerTitle = document.createElement('span');
-        headerTitle.textContent = '🧪 TEST';
-        headerTitle.style.color = '#ff66cc';
-        headerTitle.style.fontWeight = '700';
-        headerTitle.style.fontSize = (12 * scale) + 'px';
-        headerTitle.style.flex = '1';
-        header.appendChild(headerTitle);
-
-        const btnGroup = document.createElement('div');
-        btnGroup.style.display = 'flex';
-        btnGroup.style.gap = '4px';
-
-        btnGroup.appendChild(makeBtn('─', function () {
-            BH.testCollapsed = true;
-            BH.render();
-        }, { padding: '1px 6px', color: '#ff66cc', border: '1px solid #ff66cc' }));
-
-        btnGroup.appendChild(makeBtn('×', function () {
-            BH.exitTestMode();
-        }, { padding: '1px 6px', color: '#ff6666', border: '1px solid #ff6666' }));
-
-        header.appendChild(btnGroup);
-        el.appendChild(header);
-
-        // List steps
-        const listWrapper = document.createElement('div');
-        Object.assign(listWrapper.style, {
-            maxHeight: (250 * scale) + 'px',
-            overflowY: 'auto'
-        });
-
-        const templateId = BH.activeTemplateId || BH.loadActiveTemplate();
-        const template = BH.getTemplate(templateId);
-
-        let matchCount = 0;
-        let totalCount = 0;
-
-        if (template) {
-            for (let i = 0; i < template.steps.length; i++) {
-                const step = template.steps[i];
-                const result = BH.getTestResult(step.id);
-
-                totalCount++;
-
-                const row = document.createElement('div');
-                Object.assign(row.style, {
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    fontSize: (10 * scale) + 'px',
-                    marginBottom: '3px',
-                    padding: '2px 4px',
-                    gap: '6px'
-                });
-
-                let icon, color;
-
-                if (!result || result.status === 'uncalibrated') {
-                    icon = '⚠';
-                    color = '#ffaa33';
-                } else if (result.status === 'match' || result.status === 'player') {
-                    icon = '✓';
-                    color = '#70e0a8';
-                    matchCount++;
-                } else if (result.status === 'disabled') {
-                    icon = '⊘';
-                    color = '#666';
-                } else if (result.status === 'empty') {
-                    icon = '○';
-                    color = '#8ea5c2';
-                    matchCount++;
-                } else {
-                    icon = '✗';
-                    color = '#ff6666';
-                }
-
-                const nameSpan = document.createElement('span');
-                nameSpan.textContent = icon + ' ' + step.label;
-                nameSpan.style.color = color;
-                nameSpan.style.flex = '1';
-                nameSpan.style.overflow = 'hidden';
-                nameSpan.style.textOverflow = 'ellipsis';
-                row.appendChild(nameSpan);
-
-                // Cột màu chuẩn (step.hex) — luôn xanh nếu có
-                const expectedSpan = document.createElement('span');
-                expectedSpan.textContent = step.hex || '---';
-                expectedSpan.style.color = step.hex ? '#70e0a8' : '#666';
-                expectedSpan.style.fontSize = (9 * scale) + 'px';
-                expectedSpan.style.minWidth = (50 * scale) + 'px';
-                expectedSpan.style.textAlign = 'right';
-                row.appendChild(expectedSpan);
-
-                // Cột màu thực tế — đỏ nếu sai, xanh nếu đúng
-                const actualSpan = document.createElement('span');
-                actualSpan.textContent = (result && result.actualHex) || '---';
-
-                let actualColor = '#888';
-                if (result && result.actualHex) {
-                    if (result.status === 'match' || result.status === 'player' || result.status === 'empty') {
-                        actualColor = '#70e0a8';
-                    } else if (result.status === 'nomatch') {
-                        actualColor = '#ff6666';
-                    }
-                }
-
-                actualSpan.style.color = actualColor;
-                actualSpan.style.fontSize = (9 * scale) + 'px';
-                actualSpan.style.minWidth = (50 * scale) + 'px';
-                actualSpan.style.textAlign = 'right';
-                row.appendChild(actualSpan);
-
-                listWrapper.appendChild(row);
-            }
-        }
-
-        el.appendChild(listWrapper);
-
-        // Match count
-        const bottomRow = document.createElement('div');
-        Object.assign(bottomRow.style, {
-            marginTop: (8 * scale) + 'px',
-            paddingTop: (6 * scale) + 'px',
-            borderTop: '1px solid rgba(255,255,255,.1)',
-            color: '#70e0a8',
-            fontSize: (10 * scale) + 'px',
-            fontWeight: '700',
-            textAlign: 'center'
-        });
-        bottomRow.textContent = 'Match: ' + matchCount + '/' + totalCount;
-        el.appendChild(bottomRow);
-    }
-
-    // =========================================================
     // MAIN RENDER
     // =========================================================
 
@@ -766,12 +564,6 @@
         if (BH.setupMode) {
             BH.overlayEl.style.display = 'block';
             renderSetupPanel();
-            return;
-        }
-
-        if (BH.testMode) {
-            BH.overlayEl.style.display = 'block';
-            renderTestPanel();
             return;
         }
 
@@ -796,7 +588,7 @@
     BH.setMsg = function (msg) {
         BH.lastMsg = msg;
 
-        if (!BH.setupMode && !BH.testMode && BH.overlayState !== 'hidden') {
+        if (!BH.setupMode && BH.overlayState !== 'hidden') {
             BH.render();
         }
     };
@@ -808,11 +600,6 @@
     BH.cycleOverlay = function () {
         if (BH.setupMode) {
             BH.setupCollapsed = !BH.setupCollapsed;
-            BH.render();
-            return;
-        }
-        if (BH.testMode) {
-            BH.testCollapsed = !BH.testCollapsed;
             BH.render();
             return;
         }

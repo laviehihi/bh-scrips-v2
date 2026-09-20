@@ -54,7 +54,6 @@
     BH.doCheck = function () {
         if (!BH.activeAuto) return;
         if (BH.isSetupLock) return;
-        if (BH.testMode) return;
 
         const template = BH.getTemplate(BH.activeAuto);
         if (!template) return;
@@ -116,7 +115,6 @@
             return;
         }
 
-        // Load calibration trước khi chạy
         BH.loadCalibration(templateId);
 
         BH.activeAuto = templateId;

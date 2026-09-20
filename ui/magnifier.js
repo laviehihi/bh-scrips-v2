@@ -1,25 +1,53 @@
 // ui/magnifier.js
-// Kính lúp — hiện color map tại vị trí marker
-// Cố định góc trái trên, pointer-events: none
+// Kính lúp — hiện color map + đường dẫn đến marker
 
 (function (global) {
     'use strict';
 
     const BH = global.__BH__ = global.__BH__ || {};
 
-    const RADIUS = 4;         // 9x9
-    const CELL_SIZE = 10;     // px mỗi ô
+    const RADIUS = 4;
+    const CELL_SIZE = 10;
 
     BH.magnifier = null;
     BH.magnifierVisible = false;
+    BH.magnifierTarget = null;   // { x, y } clientX/Y của marker
+    BH.magnifierLine = null;     // SVG line element
 
     // =========================================================
-    // CREATE
+    // ENSURE ELEMENTS
     // =========================================================
 
     BH.ensureMagnifier = function () {
         if (BH.magnifier) return;
 
+        // SVG overlay cho đường dẫn
+        if (!document.getElementById('bh-magnifier-svg')) {
+            const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            svg.id = 'bh-magnifier-svg';
+            Object.assign(svg.style, {
+                position: 'fixed',
+                inset: '0',
+                width: '100vw',
+                height: '100vh',
+                pointerEvents: 'none',
+                zIndex: '2147483644'
+            });
+
+            const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            line.setAttribute('stroke', '#ffaa33');
+            line.setAttribute('stroke-width', '1.5');
+            line.setAttribute('stroke-dasharray', '5 4');
+            line.setAttribute('opacity', '0.7');
+            line.style.display = 'none';
+
+            svg.appendChild(line);
+            document.documentElement.appendChild(svg);
+
+            BH.magnifierLine = line;
+        }
+
+        // Box kính lúp
         const el = document.createElement('div');
 
         Object.assign(el.style, {
@@ -47,7 +75,7 @@
     };
 
     // =========================================================
-    // RENDER
+    // RENDER COLOR MAP
     // =========================================================
 
     function renderColorMap(map) {
@@ -76,7 +104,11 @@
         return html;
     }
 
-    BH.showMagnifier = function (bufX, bufY) {
+    // =========================================================
+    // SHOW / HIDE
+    // =========================================================
+
+    BH.showMagnifier = function (bufX, bufY, targetClientX, targetClientY) {
         BH.ensureMagnifier();
 
         const canvas = BH.getCanvas();
@@ -115,13 +147,48 @@
 
         BH.magnifier.style.display = 'block';
         BH.magnifierVisible = true;
+
+        // Vẽ đường từ tâm kính lúp đến marker
+        if (targetClientX != null && targetClientY != null) {
+            updateLine(targetClientX, targetClientY);
+        }
     };
+
+    function updateLine(targetX, targetY) {
+        if (!BH.magnifier || !BH.magnifierLine) return;
+
+        // Tâm kính lúp
+        const rect = BH.magnifier.getBoundingClientRect();
+        const lineX1 = rect.right;
+        const lineY1 = rect.top + rect.height / 2;
+
+        BH.magnifierLine.setAttribute('x1', lineX1);
+        BH.magnifierLine.setAttribute('y1', lineY1);
+        BH.magnifierLine.setAttribute('x2', targetX);
+        BH.magnifierLine.setAttribute('y2', targetY);
+        BH.magnifierLine.style.display = 'block';
+    }
 
     BH.hideMagnifier = function () {
         if (BH.magnifier) {
             BH.magnifier.style.display = 'none';
         }
+        if (BH.magnifierLine) {
+            BH.magnifierLine.style.display = 'none';
+        }
         BH.magnifierVisible = false;
+    };
+
+    // =========================================================
+    // UPDATE TARGET (khi marker di chuyển)
+    // =========================================================
+
+    BH.updateMagnifierTarget = function (targetX, targetY) {
+        if (!BH.magnifierVisible) return;
+        if (!BH.magnifierLine) return;
+
+        BH.magnifierLine.setAttribute('x2', targetX);
+        BH.magnifierLine.setAttribute('y2', targetY);
     };
 
 })(window);

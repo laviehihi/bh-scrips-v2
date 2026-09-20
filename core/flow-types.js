@@ -41,14 +41,39 @@
     // =========================================================
 
     BH.FLOW_TYPES.wb = function (template, onMatch) {
-        const currentPlayers = BH.countWBPlayers(template);
+        // Check nút Start/Ready có visible không
+        const startStep = BH.getStep(template, 'start');
+        const readyStep = BH.getStep(template, 'ready');
 
-        // Lưu số người hiện tại để overlay hiển thị
+        let startVisible = false;
+        let readyVisible = false;
+
+        if (startStep && startStep.calibrated) {
+            const handler = BH.STEP_TYPES[startStep.type || 'click'];
+            if (handler && handler.check(startStep)) {
+                startVisible = true;
+            }
+        }
+
+        if (readyStep && readyStep.calibrated) {
+            const handler = BH.STEP_TYPES[readyStep.type || 'click'];
+            if (handler && handler.check(readyStep)) {
+                readyVisible = true;
+            }
+        }
+
+        // Nếu không thấy Start/Ready → đang trong trận hoặc màn khác → không check slot
+        if (!startVisible && !readyVisible) {
+            // Vẫn cần check Regroup (trong trận có thể có nút Regroup)
+            return checkNonSlotSteps(template, onMatch);
+        }
+
+        // Đang ở màn chờ → check slot
+        const currentPlayers = BH.countWBPlayers(template);
         BH.wbCurrentPlayers = currentPlayers;
 
         const options = BH.loadTemplateOptions(template.id);
         const partySize = options.partySize || 1;
-
         BH.wbPartySize = partySize;
 
         if (currentPlayers < partySize) {
@@ -56,6 +81,15 @@
             return false;
         }
 
+        // Đủ người → check Start/Ready
+        return checkNonSlotSteps(template, onMatch);
+    };
+
+    // =========================================================
+    // CHECK NON-SLOT STEPS
+    // =========================================================
+
+    function checkNonSlotSteps(template, onMatch) {
         const order = template.flow.order || [];
 
         for (let i = 0; i < order.length; i++) {
@@ -74,7 +108,7 @@
         }
 
         return false;
-    };
+    }
 
     // =========================================================
     // COUNT WB PLAYERS
@@ -93,13 +127,9 @@
             const pixel = BH.readPixelAtBuf(step.x, step.y);
             if (!pixel) continue;
 
-            // Slot không thuộc party → bỏ qua
             if (BH.matchHex(pixel, disabledHex, tol)) continue;
-
-            // Slot trống → bỏ qua (màu user đã calibrate)
             if (BH.matchHex(pixel, step.hex, step.tol || tol)) continue;
 
-            // Slot có người
             count++;
         }
 
