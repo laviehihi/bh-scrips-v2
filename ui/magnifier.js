@@ -1,5 +1,5 @@
 // ui/magnifier.js
-// Kính lúp — hiện color map + đường dẫn đến marker (từ góc phải dưới)
+// Kính lúp — hiện color map + đường dẫn đến marker
 
 (function (global) {
     'use strict';
@@ -13,7 +13,7 @@
     BH.magnifierVisible = false;
     BH.magnifierLine = null;
     BH.magnifierTimerId = null;
-    BH.magnifierTarget = null;   // { bufX, bufY, clientX, clientY }
+    BH.magnifierTarget = null;
 
     // =========================================================
     // ENSURE ELEMENTS
@@ -22,7 +22,6 @@
     BH.ensureMagnifier = function () {
         if (BH.magnifier) return;
 
-        // SVG overlay cho đường dẫn
         if (!document.getElementById('bh-magnifier-svg')) {
             const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
             svg.id = 'bh-magnifier-svg';
@@ -48,7 +47,6 @@
             BH.magnifierLine = line;
         }
 
-        // Box kính lúp
         const el = document.createElement('div');
 
         Object.assign(el.style, {
@@ -106,7 +104,7 @@
     }
 
     // =========================================================
-    // RENDER (dùng chung cho show + refresh)
+    // RENDER
     // =========================================================
 
     function renderMagnifier() {
@@ -156,14 +154,17 @@
     }
 
     // =========================================================
-    // LINE — từ góc phải dưới màn hình đến marker
+    // LINE — từ góc DƯỚI-PHẢI của kính lúp đến marker
     // =========================================================
 
     function updateLine(targetX, targetY) {
-        if (!BH.magnifierLine) return;
+        if (!BH.magnifierLine || !BH.magnifier) return;
 
-        const lineX1 = window.innerWidth - 30;
-        const lineY1 = window.innerHeight - 30;
+        const rect = BH.magnifier.getBoundingClientRect();
+
+        // Góc dưới-phải của kính lúp
+        const lineX1 = rect.right;
+        const lineY1 = rect.bottom;
 
         BH.magnifierLine.setAttribute('x1', lineX1);
         BH.magnifierLine.setAttribute('y1', lineY1);
@@ -188,7 +189,6 @@
 
         renderMagnifier();
 
-        // Auto-refresh mỗi 200ms (để kính lúp luôn "sống")
         if (BH.magnifierTimerId === null) {
             BH.magnifierTimerId = BH.rt.setInterval(function () {
                 if (!BH.magnifierVisible) return;
