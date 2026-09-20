@@ -10,15 +10,14 @@
     // STATE
     // =========================================================
 
-    BH.activeAuto = null;        // 'rerun' | 'pvp' | ... | null
+    BH.activeAuto = null;
     BH.activeTemplateId = null;
-    BH.isClicking = false;
     BH.lastActionTime = 0;
 
     BH.checkTimerId = null;
     BH.autoStopTimerId = null;
 
-    BH.AUTO_STOP_TIMEOUT = 3 * 60 * 1000;  // 3 phút real time
+    BH.AUTO_STOP_TIMEOUT = 3 * 60 * 1000;
 
     // =========================================================
     // DO CHECK
@@ -26,6 +25,8 @@
 
     BH.doCheck = function () {
         if (!BH.activeAuto) return;
+        if (BH.isSetupLock) return;
+        if (BH.testMode) return;
 
         const template = BH.getTemplate(BH.activeAuto);
         if (!template) return;
@@ -47,8 +48,7 @@
         });
 
         if (!matched) {
-            // Không match step nào — có thể do chưa đủ người hoặc chưa có nút
-            // Flow handler tự set msg rồi
+            // Không match step nào
         }
     };
 
@@ -92,17 +92,12 @@
         BH.activeTemplateId = templateId;
         BH.lastActionTime = BH.rt.now();
 
-        // Lấy interval từ options (user có thể đổi), fallback về default
         const options = BH.loadTemplateOptions(templateId);
         const interval = options.interval || template.defaultInterval;
 
-        // Timer auto-stop
         BH.autoStopTimerId = BH.rt.setInterval(BH.checkAutoStop, 5000);
-
-        // Timer check chính
         BH.checkTimerId = BH.rt.setInterval(BH.doCheck, interval);
 
-        // Check ngay lần đầu
         BH.doCheck();
 
         BH.setMsg(template.name + ' started · ' + (interval / 1000) + 's');
@@ -144,7 +139,6 @@
         options.interval = ms;
         BH.saveTemplateOptions(templateId, options);
 
-        // Nếu đang chạy template này → restart để áp dụng
         if (BH.activeAuto === templateId) {
             BH.stopAuto();
             BH.startAuto(templateId);

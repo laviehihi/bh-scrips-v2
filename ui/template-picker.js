@@ -17,6 +17,8 @@
         container.appendChild(label);
 
         const select = document.createElement('select');
+        select.setAttribute('data-bh-overlay', '1');
+
         Object.assign(select.style, {
             width: '100%',
             padding: '4px 6px',
@@ -27,7 +29,13 @@
             fontFamily: 'inherit',
             fontSize: '11px',
             cursor: 'pointer',
-            boxSizing: 'border-box'
+            boxSizing: 'border-box',
+            pointerEvents: 'auto',
+            userSelect: 'auto',
+            WebkitUserSelect: 'auto',
+            MozUserSelect: 'auto',
+            position: 'relative',
+            zIndex: '1'
         });
 
         const templateId = BH.activeTemplateId || BH.loadActiveTemplate();
@@ -45,7 +53,6 @@
         select.addEventListener('change', function () {
             const newId = select.value;
 
-            // Stop auto nếu đang chạy
             if (BH.activeAuto) BH.stopAuto();
 
             BH.activeTemplateId = newId;
@@ -53,6 +60,11 @@
 
             BH.setMsg('Template: ' + BH.getTemplate(newId).name);
             BH.render();
+        });
+
+        // Chặn event bubble lên overlay
+        select.addEventListener('mousedown', function (e) {
+            e.stopPropagation();
         });
 
         container.appendChild(select);

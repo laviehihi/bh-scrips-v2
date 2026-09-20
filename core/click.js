@@ -7,6 +7,7 @@
     const BH = global.__BH__ = global.__BH__ || {};
 
     BH.isClicking = false;
+    BH.isSetupLock = false;
 
     // =========================================================
     // FIRE EVENT
@@ -89,6 +90,7 @@
 
     BH.clickAtBuf = function (bufX, bufY) {
         if (BH.isClicking) return false;
+        if (BH.isSetupLock) return false;
 
         const canvas = BH.getCanvas();
         if (!canvas) return false;

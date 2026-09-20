@@ -1,12 +1,8 @@
 // ui/overlay.js
 // Overlay chính — compact / expanded / setup / test
 //
-// States:
-// - compact: hiện status bar nhỏ
-// - expanded: hiện full panel
-// - hidden: ẩn hẳn
-//
-// Auto chuyển sang setup/test panel khi vào 2 mode đó
+// Cố định góc phải trên. Không kéo di chuyển.
+// Toggle bằng phím ` (cycleOverlay).
 
 (function (global) {
     'use strict';
@@ -28,6 +24,7 @@
         if (BH.overlayEl) return;
 
         const el = document.createElement('div');
+        el.setAttribute('data-bh-overlay', '1');
 
         Object.assign(el.style, {
             position: 'fixed',
@@ -43,76 +40,16 @@
             fontSize: '11px',
             lineHeight: '1.5',
             boxShadow: '0 4px 16px rgba(0,0,0,0.45)',
-            userSelect: 'none',
             backdropFilter: 'blur(6px)',
             WebkitBackdropFilter: 'blur(6px)',
             transition: 'width .15s ease, padding .15s ease',
             pointerEvents: 'auto'
         });
 
-        // Load vị trí đã lưu
-        const pos = BH.loadOverlayPos();
-        if (pos && pos.x != null) {
-            el.style.left = pos.x + 'px';
-            el.style.top = pos.y + 'px';
-            el.style.right = 'auto';
-        }
-
         (document.documentElement || document.body).appendChild(el);
 
         BH.overlayEl = el;
-
-        makeDraggable(el);
     };
-
-    // =========================================================
-    // DRAGGABLE
-    // =========================================================
-
-    function makeDraggable(el) {
-        let isDragging = false;
-        let startX, startY, startLeft, startTop;
-
-        el.addEventListener('mousedown', function (e) {
-            // Chỉ drag khi click vào header hoặc vùng trống
-            if (e.target.tagName === 'BUTTON') return;
-            if (e.target.tagName === 'INPUT') return;
-            if (e.target.tagName === 'SELECT') return;
-            if (e.button !== 0) return;
-
-            isDragging = true;
-            startX = e.clientX;
-            startY = e.clientY;
-
-            const rect = el.getBoundingClientRect();
-            startLeft = rect.left;
-            startTop = rect.top;
-
-            e.preventDefault();
-        });
-
-        window.addEventListener('mousemove', function (e) {
-            if (!isDragging) return;
-
-            const dx = e.clientX - startX;
-            const dy = e.clientY - startY;
-
-            const newLeft = startLeft + dx;
-            const newTop = startTop + dy;
-
-            el.style.left = newLeft + 'px';
-            el.style.top = newTop + 'px';
-            el.style.right = 'auto';
-        });
-
-        window.addEventListener('mouseup', function () {
-            if (!isDragging) return;
-            isDragging = false;
-
-            const rect = el.getBoundingClientRect();
-            BH.saveOverlayPos(rect.left, rect.top);
-        });
-    }
 
     // =========================================================
     // BUTTON HELPER
@@ -134,7 +71,9 @@
             fontFamily: 'inherit',
             fontSize: opts.fontSize || '10px',
             cursor: 'pointer',
-            transition: 'background .15s'
+            transition: 'background .15s',
+            pointerEvents: 'auto',
+            userSelect: 'none'
         });
 
         btn.addEventListener('mouseenter', function () {
@@ -176,21 +115,18 @@
         const templateId = BH.activeTemplateId || BH.loadActiveTemplate();
         const template = BH.getTemplate(templateId);
 
-        // Status dot
         const dot = document.createElement('span');
         dot.textContent = '●';
         dot.style.color = BH.activeAuto ? '#70e0a8' : '#666';
         dot.style.fontWeight = '700';
         row.appendChild(dot);
 
-        // Template name
         const nameSpan = document.createElement('span');
         nameSpan.textContent = template ? template.name : 'No template';
         nameSpan.style.color = BH.activeAuto ? '#70e0a8' : '#ff9966';
         nameSpan.style.fontWeight = '700';
         row.appendChild(nameSpan);
 
-        // Speed
         const speedSpan = document.createElement('span');
         speedSpan.textContent = BH.getSpeed() + '×';
         speedSpan.style.color = BH.getSpeed() === 1 ? '#ddd' : '#66ff66';
@@ -199,7 +135,6 @@
         speedSpan.style.borderLeft = '1px solid rgba(255,255,255,.15)';
         row.appendChild(speedSpan);
 
-        // Expand button
         const expandBtn = makeBtn('▼', function () {
             BH.overlayState = 'expanded';
             BH.render();
@@ -221,7 +156,6 @@
 
         el.innerHTML = '';
 
-        // Header
         const header = document.createElement('div');
         Object.assign(header.style, {
             display: 'flex',
@@ -229,19 +163,16 @@
             justifyContent: 'space-between',
             marginBottom: '8px',
             paddingBottom: '6px',
-            borderBottom: '1px solid rgba(255,255,255,.1)',
-            cursor: 'move'
+            borderBottom: '1px solid rgba(255,255,255,.1)'
         });
         header.innerHTML = `
             <span style="color:#fff;font-weight:700;font-size:12px;letter-spacing:.3px;">BH BOT</span>
-            <span style="color:#777;font-size:10px;">v3.0</span>
+            <span style="color:#777;font-size:10px;">v2.0</span>
         `;
         el.appendChild(header);
 
-        // Template picker
         BH.renderTemplatePicker(el);
 
-        // Options (partySize cho WB, ...)
         const templateId = BH.activeTemplateId || BH.loadActiveTemplate();
         const template = BH.getTemplate(templateId);
 
@@ -249,46 +180,11 @@
             renderPartySizeOption(el, template);
         }
 
-        // Delay preset
         renderDelayPreset(el, template);
-
-        // Speed
         renderSpeedControl(el);
-
-        // Nút Start/Stop
         renderStartStop(el, template);
-
-        // Công cụ
         renderTools(el, template);
-
-        // Log
         renderLog(el);
-
-        // Nút thu nhỏ
-        const bottomRow = document.createElement('div');
-        Object.assign(bottomRow.style, {
-            display: 'flex',
-            justifyContent: 'space-between',
-            marginTop: '8px',
-            paddingTop: '6px',
-            borderTop: '1px solid rgba(255,255,255,.1)'
-        });
-
-        bottomRow.appendChild(makeBtn('[?]', function () {
-            BH.toggleHelp();
-        }, { padding: '3px 7px' }));
-
-        bottomRow.appendChild(makeBtn('[─]', function () {
-            BH.overlayState = 'compact';
-            BH.render();
-        }, { padding: '3px 7px' }));
-
-        bottomRow.appendChild(makeBtn('[×]', function () {
-            BH.overlayState = 'hidden';
-            BH.render();
-        }, { padding: '3px 7px' }));
-
-        el.appendChild(bottomRow);
     }
 
     // =========================================================
@@ -361,9 +257,9 @@
         for (let i = 0; i < DELAY_PRESETS.length; i++) {
             const ms = DELAY_PRESETS[i];
             const isActive = ms === current;
-            const label = (ms >= 1000) ? (ms / 1000) + 's' : (ms / 1000).toFixed(1) + 's';
+            const lbl = (ms >= 1000) ? (ms / 1000) + 's' : (ms / 1000).toFixed(1) + 's';
 
-            row.appendChild(makeBtn(label, function () {
+            row.appendChild(makeBtn(lbl, function () {
                 BH.setTemplateInterval(template.id, ms);
             }, {
                 bg: isActive ? 'rgba(112,224,168,0.25)' : undefined,
@@ -410,7 +306,6 @@
             BH.setSpeed(BH.getSpeed() + 1);
         }, { padding: '3px 7px' }));
 
-        // Preset
         const presets = [1, 2, 3, 5, 10];
         for (let i = 0; i < presets.length; i++) {
             const v = presets[i];
@@ -501,14 +396,6 @@
             function () { BH.toggleTestMode(); }
         ));
 
-        row.appendChild(makeBtn('[Export]', function () {
-            BH.exportTemplate(template.id);
-        }));
-
-        row.appendChild(makeBtn('[Import]', function () {
-            BH.importTemplateDialog();
-        }));
-
         el.appendChild(row);
     }
 
@@ -551,13 +438,11 @@
             fontSize: '12px',
             marginBottom: '8px',
             paddingBottom: '6px',
-            borderBottom: '1px solid rgba(255,170,51,.3)',
-            cursor: 'move'
+            borderBottom: '1px solid rgba(255,170,51,.3)'
         });
         header.textContent = '🔧 SETUP · ' + (BH.setupTemplate ? BH.setupTemplate.name : '');
         el.appendChild(header);
 
-        // List steps
         if (BH.setupTemplate) {
             for (let i = 0; i < BH.setupTemplate.steps.length; i++) {
                 const step = BH.setupTemplate.steps[i];
@@ -596,9 +481,7 @@
         Object.assign(bottomRow.style, {
             marginTop: '8px',
             paddingTop: '6px',
-            borderTop: '1px solid rgba(255,255,255,.1)',
-            display: 'flex',
-            justifyContent: 'space-between'
+            borderTop: '1px solid rgba(255,255,255,.1)'
         });
 
         bottomRow.appendChild(makeBtn('[Thoát]', function () {
@@ -627,8 +510,7 @@
             fontSize: '12px',
             marginBottom: '8px',
             paddingBottom: '6px',
-            borderBottom: '1px solid rgba(255,102,204,.3)',
-            cursor: 'move'
+            borderBottom: '1px solid rgba(255,102,204,.3)'
         });
         header.textContent = '🧪 TEST';
         el.appendChild(header);
@@ -708,21 +590,18 @@
     BH.render = function () {
         BH.ensureOverlay();
 
-        // Setup mode
         if (BH.setupMode) {
             BH.overlayEl.style.display = 'block';
             renderSetupPanel();
             return;
         }
 
-        // Test mode
         if (BH.testMode) {
             BH.overlayEl.style.display = 'block';
             renderTestPanel();
             return;
         }
 
-        // Hidden
         if (BH.overlayState === 'hidden') {
             BH.overlayEl.style.display = 'none';
             return;
@@ -754,7 +633,6 @@
     // =========================================================
 
     BH.cycleOverlay = function () {
-        // Nếu đang ở setup/test → thoát
         if (BH.setupMode) {
             BH.exitSetupMode();
             return;

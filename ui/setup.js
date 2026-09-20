@@ -21,9 +21,9 @@
 
     // Vị trí marker chưa calibrate — xếp hàng ngang ở dưới
     const ROW_START_X = 60;
-    const ROW_START_Y_OFFSET = 100;  // cách đáy màn hình
+    const ROW_START_Y_OFFSET = 100;
     const ROW_SPACING_X = 90;
-    const ROW_WRAP = 6;              // wrap sau 6 marker
+    const ROW_WRAP = 6;
 
     // =========================================================
     // STATE
@@ -52,12 +52,12 @@
         if (BH.activeAuto) BH.stopAuto();
 
         BH.setupMode = true;
+        BH.isSetupLock = true;
         BH.setupTemplate = template;
 
         // Load state đã lưu
         const savedState = BH.loadTemplateState(templateId) || {};
 
-        // Tạo markers
         const uncalibrated = [];
 
         for (let i = 0; i < template.steps.length; i++) {
@@ -74,7 +74,8 @@
                 step.tol = savedStep.tol || 15;
                 step.calibrated = true;
 
-                const pos = BH.bufferToClient(BH.getCanvas(), step.x, step.y);
+                const canvas = BH.getCanvas();
+                const pos = canvas ? BH.bufferToClient(canvas, step.x, step.y) : { clientX: 0, clientY: 0 };
                 markerX = pos.clientX;
                 markerY = pos.clientY;
                 calibrated = true;
@@ -112,6 +113,7 @@
         if (!BH.setupMode) return;
 
         BH.setupMode = false;
+        BH.isSetupLock = false;
 
         // Xoá markers
         for (const id in BH.setupMarkers) {
@@ -189,6 +191,7 @@
             if (e.button !== 0) return;
             e.preventDefault();
             e.stopPropagation();
+            e.stopImmediatePropagation();
 
             isDragging = true;
 
@@ -231,6 +234,10 @@
         window.addEventListener('mouseup', function (e) {
             if (!isDragging) return;
             isDragging = false;
+
+            e.preventDefault();
+            e.stopPropagation();
+            e.stopImmediatePropagation();
 
             marker.style.cursor = 'move';
 
@@ -289,7 +296,6 @@
                         buf: buf
                     });
 
-                    // Update magnifier với mẫu mới
                     BH.showMagnifier(buf.x, buf.y);
                 }
 
@@ -306,7 +312,6 @@
     }
 
     function finishStableCheck(marker, step, samples, clientX, clientY) {
-        // Đếm mode
         const counts = {};
         for (let i = 0; i < samples.length; i++) {
             const h = samples[i].hex;
@@ -328,8 +333,8 @@
             return;
         }
 
-        // Chốt màu
-        const buf = BH.clientToBuffer(BH.getCanvas(), clientX, clientY);
+        const canvas = BH.getCanvas();
+        const buf = BH.clientToBuffer(canvas, clientX, clientY);
 
         step.x = buf.x;
         step.y = buf.y;
@@ -337,7 +342,6 @@
         step.tol = 15;
         step.calibrated = true;
 
-        // Lưu vào storage
         saveStepToStorage(step);
 
         BH.setMarkerState(marker, 'done', maxHex);
@@ -385,17 +389,15 @@
         step.y = null;
         step.hex = null;
 
-        // Xoá khỏi storage
         const templateId = BH.setupTemplate.id;
         const state = BH.loadTemplateState(templateId) || {};
         delete state[stepId];
         BH.saveTemplateState(templateId, state);
 
-        // Reset marker
         const marker = BH.setupMarkers[stepId];
         if (marker) {
             BH.setMarkerState(marker, 'pending');
-            // Đưa về hàng
+
             const uncalibrated = [];
             for (let i = 0; i < BH.setupTemplate.steps.length; i++) {
                 const s = BH.setupTemplate.steps[i];
