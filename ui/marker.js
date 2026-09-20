@@ -1,10 +1,5 @@
 // ui/marker.js
-// Marker component — kéo thả để calibrate
-//
-// States:
-// - pending: chưa calibrate, hiện vòng tròn dashed hồng
-// - dragging: đang kéo
-// - done: đã calibrate, hiện tick xanh
+// Marker component + click flash effect
 
 (function (global) {
     'use strict';
@@ -115,7 +110,6 @@
         label.textContent = step.label || step.id;
         marker.appendChild(label);
 
-        // Inject keyframe CSS 1 lần
         if (!document.getElementById('bh-marker-style')) {
             const style = document.createElement('style');
             style.id = 'bh-marker-style';
@@ -205,6 +199,69 @@
         if (marker && marker.parentNode) {
             marker.remove();
         }
+    };
+
+    // =========================================================
+    // CLICK FLASH
+    // =========================================================
+
+    BH.showClickFlash = function (x, y) {
+        const ripple = document.createElement('div');
+        Object.assign(ripple.style, {
+            position: 'fixed',
+            left: x + 'px',
+            top: y + 'px',
+            width: '22px',
+            height: '22px',
+            transform: 'translate(-50%, -50%) scale(0.4)',
+            border: '2px solid #00d4ff',
+            borderRadius: '50%',
+            boxShadow: '0 0 10px #00d4ff, 0 0 20px rgba(0,212,255,.6)',
+            pointerEvents: 'none',
+            zIndex: '2147483646',
+            opacity: '1',
+            transition: 'transform .35s cubic-bezier(.2,.8,.3,1), opacity .35s ease-out'
+        });
+
+        document.documentElement.appendChild(ripple);
+
+        BH.rt.raf(function () {
+            ripple.style.transform = 'translate(-50%, -50%) scale(1.8)';
+            ripple.style.opacity = '0';
+        });
+
+        BH.rt.setTimeout(function () { ripple.remove(); }, 400);
+
+        const btn = document.createElement('div');
+        Object.assign(btn.style, {
+            position: 'fixed',
+            left: x + 'px',
+            top: y + 'px',
+            width: '16px',
+            height: '16px',
+            transform: 'translate(-50%, -50%) scale(1.4)',
+            background: 'radial-gradient(circle at 35% 30%, #ffffff, #00d4ff 60%, #0077aa)',
+            border: '1.5px solid #ffffff',
+            borderRadius: '50%',
+            boxShadow: '0 0 8px #00d4ff, 0 0 16px rgba(0,212,255,.7), inset 0 -2px 4px rgba(0,0,0,.25)',
+            pointerEvents: 'none',
+            zIndex: '2147483647',
+            opacity: '1',
+            transition: 'transform .12s ease-out, opacity .25s ease-out .1s, box-shadow .12s ease-out'
+        });
+
+        document.documentElement.appendChild(btn);
+
+        BH.rt.raf(function () {
+            btn.style.transform = 'translate(-50%, -50%) scale(0.7)';
+        });
+
+        BH.rt.setTimeout(function () {
+            btn.style.transform = 'translate(-50%, -50%) scale(1.15)';
+            btn.style.opacity = '0';
+        }, 90);
+
+        BH.rt.setTimeout(function () { btn.remove(); }, 400);
     };
 
 })(window);

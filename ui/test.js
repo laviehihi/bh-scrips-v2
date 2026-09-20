@@ -10,8 +10,8 @@
     BH.testCollapsed = false;
     BH.testTimerId = null;
     BH.testResults = {};
-    BH.testStepStates = {};   // stepId → 'pending' | 'match' | 'nomatch'
-    BH.testIndicators = {};   // stepId → DOM element
+    BH.testStepStates = {};
+    BH.testIndicators = {};
 
     // =========================================================
     // ENTER / EXIT
@@ -38,6 +38,9 @@
         BH.testStepStates = {};
         BH.testIndicators = {};
 
+        // Load calibration
+        BH.loadCalibration(templateId);
+
         createIndicators(template);
 
         BH.testTimerId = BH.rt.setInterval(runTest, 1000);
@@ -60,7 +63,6 @@
             BH.testTimerId = null;
         }
 
-        // Xóa indicators
         for (const id in BH.testIndicators) {
             const el = BH.testIndicators[id];
             if (el && el.parentNode) el.remove();
@@ -163,7 +165,6 @@
                 continue;
             }
 
-            // Nếu step đã match rồi → bỏ qua
             if (BH.testStepStates[step.id] === 'match') {
                 result.status = 'match';
                 BH.testResults[step.id] = result;
@@ -173,13 +174,11 @@
             const pixel = BH.readPixelAtBuf(step.x, step.y);
             result.actualHex = pixel ? BH.rgbToHex(pixel) : null;
 
-            // Slot type
             if (step.type === 'slot') {
                 if (pixel && BH.matchHex(pixel, template.config.disabledHex, template.config.tol)) {
                     result.status = 'disabled';
                 } else if (pixel && BH.matchHex(pixel, step.hex, step.tol)) {
                     result.status = 'empty';
-                    // Match với màu đã setup → xanh
                     BH.testStepStates[step.id] = 'match';
                     setIndicatorState(step.id, 'match');
                 } else {
@@ -189,7 +188,6 @@
                 continue;
             }
 
-            // Các type khác
             const handler = BH.STEP_TYPES[step.type || 'click'];
             if (!handler) continue;
 
@@ -198,7 +196,6 @@
                 BH.testStepStates[step.id] = 'match';
                 setIndicatorState(step.id, 'match');
 
-                // Flash
                 if (pixel && BH.showClickFlash) {
                     const canvas = BH.getCanvas();
                     if (canvas) {
@@ -216,10 +213,6 @@
 
         if (BH.render) BH.render();
     }
-
-    // =========================================================
-    // HELPER
-    // =========================================================
 
     BH.getTestResult = function (stepId) {
         return BH.testResults[stepId] || null;

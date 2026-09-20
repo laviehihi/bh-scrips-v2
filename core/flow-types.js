@@ -1,11 +1,6 @@
 // core/flow-types.js
 // Định nghĩa các loại flow
 //
-// ĐỂ THÊM FLOW TYPE MỚI:
-// 1. Thêm function vào BH.FLOW_TYPES
-// 2. Function nhận (template, onMatch)
-// 3. Gọi onMatch(step) khi match được step
-//
 // Flow types hiện có:
 // - sequential: check tuần tự theo flow.order
 // - wb: check slot trước, rồi sequential
@@ -46,27 +41,28 @@
     // =========================================================
 
     BH.FLOW_TYPES.wb = function (template, onMatch) {
-        // 1. Đếm số người hiện tại
         const currentPlayers = BH.countWBPlayers(template);
 
-        // 2. Lấy partySize từ options
+        // Lưu số người hiện tại để overlay hiển thị
+        BH.wbCurrentPlayers = currentPlayers;
+
         const options = BH.loadTemplateOptions(template.id);
         const partySize = options.partySize || 1;
 
-        // 3. Nếu chưa đủ người → chờ
+        BH.wbPartySize = partySize;
+
         if (currentPlayers < partySize) {
             BH.setMsg('Chờ member (' + currentPlayers + '/' + partySize + ')');
             return false;
         }
 
-        // 4. Đủ người → check các step còn lại (start, ready, ...)
         const order = template.flow.order || [];
 
         for (let i = 0; i < order.length; i++) {
             const step = BH.getStep(template, order[i]);
             if (!step) continue;
             if (!step.calibrated) continue;
-            if (step.type === 'slot') continue; // bỏ qua slot
+            if (step.type === 'slot') continue;
 
             const handler = BH.STEP_TYPES[step.type || 'click'];
             if (!handler) continue;

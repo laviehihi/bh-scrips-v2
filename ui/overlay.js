@@ -1,8 +1,6 @@
 // ui/overlay.js
 // Overlay chính — compact / expanded / setup / test
-//
-// Cố định góc phải trên. Không kéo di chuyển.
-// Toggle bằng phím ` (cycleOverlay).
+// Auto-scale theo canvas size
 
 (function (global) {
     'use strict';
@@ -15,6 +13,30 @@
     BH.overlayEl = null;
     BH.lastMsg = '';
     BH.passthrough = false;
+
+    // =========================================================
+    // AUTO-SCALE
+    // =========================================================
+
+    function getOverlayScale() {
+        const canvas = BH.getCanvas();
+        if (!canvas) return 1;
+
+        const rect = canvas.getBoundingClientRect();
+        const w = rect.width;
+
+        if (w < 500) return 0.75;
+        if (w < 800) return 0.9;
+        if (w < 1200) return 1;
+        if (w < 1600) return 1.1;
+        return 1.2;
+    }
+
+    function applyScale(el) {
+        const scale = getOverlayScale();
+        el.style.fontSize = (11 * scale) + 'px';
+        return scale;
+    }
 
     // =========================================================
     // ENSURE OVERLAY
@@ -102,8 +124,9 @@
 
     function renderCompact() {
         const el = BH.overlayEl;
+        const scale = applyScale(el);
         el.style.width = 'auto';
-        el.style.padding = '6px 10px';
+        el.style.padding = (6 * scale) + 'px ' + (10 * scale) + 'px';
         el.style.borderColor = 'rgba(255,255,255,0.12)';
 
         el.innerHTML = '';
@@ -112,8 +135,8 @@
         Object.assign(row.style, {
             display: 'flex',
             alignItems: 'center',
-            gap: '8px',
-            fontSize: '12px',
+            gap: (8 * scale) + 'px',
+            fontSize: (12 * scale) + 'px',
             whiteSpace: 'nowrap'
         });
 
@@ -132,12 +155,27 @@
         nameSpan.style.fontWeight = '700';
         row.appendChild(nameSpan);
 
+        // WB → hiện số người
+        if (template && template.id === 'wb' && BH.activeAuto === 'wb') {
+            const countSpan = document.createElement('span');
+            const current = BH.wbCurrentPlayers || 0;
+            const total = BH.wbPartySize || 1;
+            const isFull = current >= total;
+
+            countSpan.textContent = current + '/' + total;
+            countSpan.style.color = isFull ? '#70e0a8' : '#ffaa33';
+            countSpan.style.fontWeight = '700';
+            countSpan.style.paddingLeft = (6 * scale) + 'px';
+            countSpan.style.borderLeft = '1px solid rgba(255,255,255,.15)';
+            row.appendChild(countSpan);
+        }
+
         // Speed
         const speedSpan = document.createElement('span');
         speedSpan.textContent = BH.getSpeed() + '×';
         speedSpan.style.color = BH.getSpeed() === 1 ? '#ddd' : '#66ff66';
         speedSpan.style.fontWeight = '700';
-        speedSpan.style.paddingLeft = '6px';
+        speedSpan.style.paddingLeft = (6 * scale) + 'px';
         speedSpan.style.borderLeft = '1px solid rgba(255,255,255,.15)';
         row.appendChild(speedSpan);
 
@@ -156,8 +194,9 @@
 
     function renderExpanded() {
         const el = BH.overlayEl;
-        el.style.width = '270px';
-        el.style.padding = '10px 12px';
+        const scale = applyScale(el);
+        el.style.width = (270 * scale) + 'px';
+        el.style.padding = (10 * scale) + 'px ' + (12 * scale) + 'px';
         el.style.borderColor = 'rgba(255,255,255,0.12)';
 
         el.innerHTML = '';
@@ -169,13 +208,13 @@
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            marginBottom: '8px',
-            paddingBottom: '6px',
+            marginBottom: (8 * scale) + 'px',
+            paddingBottom: (6 * scale) + 'px',
             borderBottom: '1px solid rgba(255,255,255,.1)'
         });
         header.innerHTML = `
-            <span style="color:#fff;font-weight:700;font-size:12px;letter-spacing:.3px;">BH BOT</span>
-            <span style="color:#777;font-size:10px;">v2.0</span>
+            <span style="color:#fff;font-weight:700;font-size:${12 * scale}px;letter-spacing:.3px;">BH BOT</span>
+            <span style="color:#777;font-size:${10 * scale}px;">v2.0</span>
         `;
         el.appendChild(header);
 
@@ -185,27 +224,26 @@
         const template = BH.getTemplate(templateId);
 
         if (template && template.options && template.options.partySize) {
-            renderPartySizeOption(el, template, isRunning);
+            renderPartySizeOption(el, template, isRunning, scale);
         }
 
-        renderClickDelayPreset(el, template, isRunning);
-        renderStartStop(el, template);
-        renderTools(el, template, isRunning);
-        renderLog(el);
+        renderClickDelayPreset(el, template, isRunning, scale);
+        renderStartStopTools(el, template, scale);
+        renderLog(el, scale);
     }
 
     // =========================================================
-    // PARTY SIZE OPTION (cho WB)
+    // PARTY SIZE
     // =========================================================
 
-    function renderPartySizeOption(el, template, isRunning) {
+    function renderPartySizeOption(el, template, isRunning, scale) {
         const label = document.createElement('div');
         label.textContent = 'SỐ NGƯỜI:';
         Object.assign(label.style, {
             color: '#888',
-            fontSize: '10px',
-            marginTop: '8px',
-            marginBottom: '4px'
+            fontSize: (10 * scale) + 'px',
+            marginTop: (8 * scale) + 'px',
+            marginBottom: (4 * scale) + 'px'
         });
         el.appendChild(label);
 
@@ -243,16 +281,16 @@
 
     const DELAY_PRESETS = [300, 500, 1000, 2000, 5000];
 
-    function renderClickDelayPreset(el, template, isRunning) {
+    function renderClickDelayPreset(el, template, isRunning, scale) {
         if (!template) return;
 
         const label = document.createElement('div');
         label.textContent = 'DELAY CLICK:';
         Object.assign(label.style, {
             color: '#888',
-            fontSize: '10px',
-            marginTop: '8px',
-            marginBottom: '4px'
+            fontSize: (10 * scale) + 'px',
+            marginTop: (8 * scale) + 'px',
+            marginBottom: (4 * scale) + 'px'
         });
         el.appendChild(label);
 
@@ -281,16 +319,16 @@
     }
 
     // =========================================================
-    // START / STOP + TOOLS (gộp 1 dòng)
+    // START/STOP + TOOLS (gộp)
     // =========================================================
 
-    function renderStartStop(el, template) {
+    function renderStartStopTools(el, template, scale) {
         if (!template) return;
 
         const row = document.createElement('div');
         Object.assign(row.style, {
-            marginTop: '10px',
-            paddingTop: '8px',
+            marginTop: (10 * scale) + 'px',
+            paddingTop: (8 * scale) + 'px',
             borderTop: '1px solid rgba(255,255,255,.1)',
             display: 'flex',
             flexWrap: 'wrap',
@@ -321,21 +359,7 @@
             }));
         }
 
-        el.appendChild(row);
-    }
-
-    // =========================================================
-    // TOOLS (Setup + Test) — gộp vào cùng dòng Start
-    // =========================================================
-
-    function renderTools(el, template, isRunning) {
-        if (!template) return;
-
-        // Lấy row Start/Stop đã tạo (là element cuối)
-        const startRow = el.lastChild;
-        if (!startRow) return;
-
-        startRow.appendChild(makeBtn('[Setup]', function () {
+        row.appendChild(makeBtn('[Setup]', function () {
             BH.toggleSetupMode();
         }, {
             disabled: isRunning,
@@ -343,27 +367,29 @@
             fontSize: '11px'
         }));
 
-        startRow.appendChild(makeBtn('[Test]', function () {
+        row.appendChild(makeBtn('[Test]', function () {
             BH.toggleTestMode();
         }, {
             disabled: isRunning,
             padding: '6px 10px',
             fontSize: '11px'
         }));
+
+        el.appendChild(row);
     }
 
     // =========================================================
     // LOG
     // =========================================================
 
-    function renderLog(el) {
+    function renderLog(el, scale) {
         const log = document.createElement('div');
         Object.assign(log.style, {
-            marginTop: '8px',
-            paddingTop: '6px',
+            marginTop: (8 * scale) + 'px',
+            paddingTop: (6 * scale) + 'px',
             borderTop: '1px solid rgba(255,255,255,.1)',
             color: '#9aa',
-            fontSize: '10px',
+            fontSize: (10 * scale) + 'px',
             whiteSpace: 'nowrap',
             overflow: 'hidden',
             textOverflow: 'ellipsis'
@@ -378,11 +404,12 @@
 
     function renderSetupPanel() {
         const el = BH.overlayEl;
+        const scale = applyScale(el);
 
-        // Nếu đang thu nhỏ
+        // Thu gọn
         if (BH.setupCollapsed) {
             el.style.width = 'auto';
-            el.style.padding = '6px 10px';
+            el.style.padding = (6 * scale) + 'px ' + (10 * scale) + 'px';
             el.style.borderColor = '#ffaa33';
 
             el.innerHTML = '';
@@ -390,13 +417,13 @@
             const row = document.createElement('div');
             row.style.display = 'flex';
             row.style.alignItems = 'center';
-            row.style.gap = '6px';
+            row.style.gap = (6 * scale) + 'px';
 
             const txt = document.createElement('span');
             txt.textContent = '🔧 SETUP · ' + (BH.setupTemplate ? BH.setupTemplate.name : '');
             txt.style.color = '#ffaa33';
             txt.style.fontWeight = '700';
-            txt.style.fontSize = '11px';
+            txt.style.fontSize = (11 * scale) + 'px';
             row.appendChild(txt);
 
             row.appendChild(makeBtn('▲', function () {
@@ -404,23 +431,28 @@
                 BH.render();
             }, { padding: '2px 6px', color: '#ffaa33', border: '1px solid #ffaa33' }));
 
+            row.appendChild(makeBtn('×', function () {
+                BH.exitSetupMode();
+            }, { padding: '2px 6px', color: '#ff6666', border: '1px solid #ff6666' }));
+
             el.appendChild(row);
             return;
         }
 
-        el.style.width = '230px';
-        el.style.padding = '10px 12px';
+        el.style.width = (240 * scale) + 'px';
+        el.style.padding = (10 * scale) + 'px ' + (12 * scale) + 'px';
         el.style.borderColor = '#ffaa33';
 
         el.innerHTML = '';
 
+        // Header + nút
         const header = document.createElement('div');
         Object.assign(header.style, {
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
-            marginBottom: '8px',
-            paddingBottom: '6px',
+            marginBottom: (8 * scale) + 'px',
+            paddingBottom: (6 * scale) + 'px',
             borderBottom: '1px solid rgba(255,170,51,.3)'
         });
 
@@ -428,62 +460,111 @@
         headerTitle.textContent = '🔧 SETUP · ' + (BH.setupTemplate ? BH.setupTemplate.name : '');
         headerTitle.style.color = '#ffaa33';
         headerTitle.style.fontWeight = '700';
-        headerTitle.style.fontSize = '12px';
+        headerTitle.style.fontSize = (12 * scale) + 'px';
+        headerTitle.style.flex = '1';
         header.appendChild(headerTitle);
 
-        header.appendChild(makeBtn('─', function () {
+        const btnGroup = document.createElement('div');
+        btnGroup.style.display = 'flex';
+        btnGroup.style.gap = '4px';
+
+        btnGroup.appendChild(makeBtn('─', function () {
             BH.setupCollapsed = true;
             BH.render();
         }, { padding: '1px 6px', color: '#ffaa33', border: '1px solid #ffaa33' }));
 
+        btnGroup.appendChild(makeBtn('×', function () {
+            BH.exitSetupMode();
+        }, { padding: '1px 6px', color: '#ff6666', border: '1px solid #ff6666' }));
+
+        header.appendChild(btnGroup);
         el.appendChild(header);
 
-        if (BH.setupTemplate) {
-            for (let i = 0; i < BH.setupTemplate.steps.length; i++) {
-                const step = BH.setupTemplate.steps[i];
+        // Current step info
+        const total = BH.setupTemplate ? BH.setupTemplate.steps.length : 0;
+        const curIndex = BH.setupCurrentIndex;
+        const curStep = BH.setupTemplate ? BH.setupTemplate.steps[curIndex] : null;
 
-                const row = document.createElement('div');
-                Object.assign(row.style, {
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    fontSize: '10px',
-                    marginBottom: '3px',
-                    padding: '2px 4px',
-                    borderRadius: '3px',
-                    background: step.calibrated ? 'rgba(112,224,168,.1)' : 'rgba(255,170,51,.1)'
-                });
+        if (curStep) {
+            const info = document.createElement('div');
+            Object.assign(info.style, {
+                fontSize: (11 * scale) + 'px',
+                marginBottom: (8 * scale) + 'px',
+                lineHeight: '1.6'
+            });
 
-                const info = document.createElement('span');
-                info.textContent = (step.calibrated ? '✓ ' : '⚠ ') + step.label +
-                    (step.hex ? '  ' + step.hex : '  chưa đặt');
-                info.style.color = step.calibrated ? '#70e0a8' : '#ffaa33';
-                info.style.flex = '1';
-                row.appendChild(info);
+            info.innerHTML = `
+                <div style="color:#fff;font-weight:700;margin-bottom:4px;">
+                    Nút ${curIndex + 1}/${total}: ${curStep.label}
+                </div>
+                <div style="color:#888;font-size:${10 * scale}px;">
+                    ${curStep.hint || ''}
+                </div>
+                <div style="color:${curStep.calibrated ? '#70e0a8' : '#ffaa33'};font-size:${10 * scale}px;margin-top:4px;">
+                    ${curStep.calibrated ? '✓ ' + curStep.hex : '⚠ Chưa setup'}
+                </div>
+            `;
 
-                if (step.calibrated) {
-                    const resetBtn = makeBtn('↺', function () {
-                        BH.resetStep(step.id);
-                    }, { padding: '1px 5px', fontSize: '9px' });
-                    row.appendChild(resetBtn);
-                }
-
-                el.appendChild(row);
-            }
+            el.appendChild(info);
         }
 
-        const bottomRow = document.createElement('div');
-        Object.assign(bottomRow.style, {
-            marginTop: '8px',
-            paddingTop: '6px',
+        // Nav buttons
+        const navRow = document.createElement('div');
+        Object.assign(navRow.style, {
+            display: 'flex',
+            gap: '6px',
+            marginBottom: (8 * scale) + 'px'
+        });
+
+        navRow.appendChild(makeBtn('← Trước', function () {
+            BH.setupPrevStep();
+        }, {
+            disabled: curIndex <= 0,
+            flex: '1'
+        }));
+
+        navRow.appendChild(makeBtn('Tiếp →', function () {
+            BH.setupNextStep();
+        }, {
+            disabled: curIndex >= total - 1,
+            flex: '1'
+        }));
+
+        el.appendChild(navRow);
+
+        // Progress dots
+        const progressRow = document.createElement('div');
+        Object.assign(progressRow.style, {
+            display: 'flex',
+            flexWrap: 'wrap',
+            gap: '4px',
+            paddingTop: (6 * scale) + 'px',
             borderTop: '1px solid rgba(255,255,255,.1)'
         });
 
-        bottomRow.appendChild(makeBtn('[Thoát]', function () {
-            BH.exitSetupMode();
-        }, { color: '#ffaa33', border: '1px solid #ffaa33', bg: 'rgba(255,170,51,0.15)' }));
+        if (BH.setupTemplate) {
+            for (let i = 0; i < BH.setupTemplate.steps.length; i++) {
+                const s = BH.setupTemplate.steps[i];
+                const dot = document.createElement('div');
 
-        el.appendChild(bottomRow);
+                let bg;
+                if (i === curIndex) bg = '#ffaa33';
+                else if (s.calibrated) bg = '#70e0a8';
+                else bg = 'rgba(255,255,255,.15)';
+
+                Object.assign(dot.style, {
+                    width: (8 * scale) + 'px',
+                    height: (8 * scale) + 'px',
+                    borderRadius: '50%',
+                    background: bg,
+                    boxShadow: i === curIndex ? '0 0 6px #ffaa33' : 'none'
+                });
+
+                progressRow.appendChild(dot);
+            }
+        }
+
+        el.appendChild(progressRow);
     }
 
     // =========================================================
@@ -492,10 +573,11 @@
 
     function renderTestPanel() {
         const el = BH.overlayEl;
+        const scale = applyScale(el);
 
         if (BH.testCollapsed) {
             el.style.width = 'auto';
-            el.style.padding = '6px 10px';
+            el.style.padding = (6 * scale) + 'px ' + (10 * scale) + 'px';
             el.style.borderColor = '#ff66cc';
 
             el.innerHTML = '';
@@ -503,13 +585,13 @@
             const row = document.createElement('div');
             row.style.display = 'flex';
             row.style.alignItems = 'center';
-            row.style.gap = '6px';
+            row.style.gap = (6 * scale) + 'px';
 
             const txt = document.createElement('span');
             txt.textContent = '🧪 TEST';
             txt.style.color = '#ff66cc';
             txt.style.fontWeight = '700';
-            txt.style.fontSize = '11px';
+            txt.style.fontSize = (11 * scale) + 'px';
             row.appendChild(txt);
 
             row.appendChild(makeBtn('▲', function () {
@@ -517,23 +599,28 @@
                 BH.render();
             }, { padding: '2px 6px', color: '#ff66cc', border: '1px solid #ff66cc' }));
 
+            row.appendChild(makeBtn('×', function () {
+                BH.exitTestMode();
+            }, { padding: '2px 6px', color: '#ff6666', border: '1px solid #ff6666' }));
+
             el.appendChild(row);
             return;
         }
 
-        el.style.width = '250px';
-        el.style.padding = '10px 12px';
+        el.style.width = (280 * scale) + 'px';
+        el.style.padding = (10 * scale) + 'px ' + (12 * scale) + 'px';
         el.style.borderColor = '#ff66cc';
 
         el.innerHTML = '';
 
+        // Header + nút
         const header = document.createElement('div');
         Object.assign(header.style, {
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
-            marginBottom: '8px',
-            paddingBottom: '6px',
+            marginBottom: (8 * scale) + 'px',
+            paddingBottom: (6 * scale) + 'px',
             borderBottom: '1px solid rgba(255,102,204,.3)'
         });
 
@@ -541,31 +628,54 @@
         headerTitle.textContent = '🧪 TEST';
         headerTitle.style.color = '#ff66cc';
         headerTitle.style.fontWeight = '700';
-        headerTitle.style.fontSize = '12px';
+        headerTitle.style.fontSize = (12 * scale) + 'px';
+        headerTitle.style.flex = '1';
         header.appendChild(headerTitle);
 
-        header.appendChild(makeBtn('─', function () {
+        const btnGroup = document.createElement('div');
+        btnGroup.style.display = 'flex';
+        btnGroup.style.gap = '4px';
+
+        btnGroup.appendChild(makeBtn('─', function () {
             BH.testCollapsed = true;
             BH.render();
         }, { padding: '1px 6px', color: '#ff66cc', border: '1px solid #ff66cc' }));
 
+        btnGroup.appendChild(makeBtn('×', function () {
+            BH.exitTestMode();
+        }, { padding: '1px 6px', color: '#ff6666', border: '1px solid #ff6666' }));
+
+        header.appendChild(btnGroup);
         el.appendChild(header);
+
+        // List steps
+        const listWrapper = document.createElement('div');
+        Object.assign(listWrapper.style, {
+            maxHeight: (250 * scale) + 'px',
+            overflowY: 'auto'
+        });
 
         const templateId = BH.activeTemplateId || BH.loadActiveTemplate();
         const template = BH.getTemplate(templateId);
+
+        let matchCount = 0;
+        let totalCount = 0;
 
         if (template) {
             for (let i = 0; i < template.steps.length; i++) {
                 const step = template.steps[i];
                 const result = BH.getTestResult(step.id);
 
+                totalCount++;
+
                 const row = document.createElement('div');
                 Object.assign(row.style, {
                     display: 'flex',
                     justifyContent: 'space-between',
-                    fontSize: '10px',
+                    fontSize: (10 * scale) + 'px',
                     marginBottom: '3px',
-                    padding: '2px 4px'
+                    padding: '2px 4px',
+                    gap: '6px'
                 });
 
                 let icon, color;
@@ -576,12 +686,14 @@
                 } else if (result.status === 'match' || result.status === 'player') {
                     icon = '✓';
                     color = '#70e0a8';
+                    matchCount++;
                 } else if (result.status === 'disabled') {
                     icon = '⊘';
                     color = '#666';
                 } else if (result.status === 'empty') {
                     icon = '○';
                     color = '#8ea5c2';
+                    matchCount++;
                 } else {
                     icon = '✗';
                     color = '#ff6666';
@@ -591,31 +703,56 @@
                 nameSpan.textContent = icon + ' ' + step.label;
                 nameSpan.style.color = color;
                 nameSpan.style.flex = '1';
+                nameSpan.style.overflow = 'hidden';
+                nameSpan.style.textOverflow = 'ellipsis';
                 row.appendChild(nameSpan);
 
+                // Cột màu chuẩn (step.hex) — luôn xanh nếu có
+                const expectedSpan = document.createElement('span');
+                expectedSpan.textContent = step.hex || '---';
+                expectedSpan.style.color = step.hex ? '#70e0a8' : '#666';
+                expectedSpan.style.fontSize = (9 * scale) + 'px';
+                expectedSpan.style.minWidth = (50 * scale) + 'px';
+                expectedSpan.style.textAlign = 'right';
+                row.appendChild(expectedSpan);
+
+                // Cột màu thực tế — đỏ nếu sai, xanh nếu đúng
+                const actualSpan = document.createElement('span');
+                actualSpan.textContent = (result && result.actualHex) || '---';
+
+                let actualColor = '#888';
                 if (result && result.actualHex) {
-                    const hexSpan = document.createElement('span');
-                    hexSpan.textContent = result.actualHex;
-                    hexSpan.style.color = '#888';
-                    hexSpan.style.fontSize = '9px';
-                    row.appendChild(hexSpan);
+                    if (result.status === 'match' || result.status === 'player' || result.status === 'empty') {
+                        actualColor = '#70e0a8';
+                    } else if (result.status === 'nomatch') {
+                        actualColor = '#ff6666';
+                    }
                 }
 
-                el.appendChild(row);
+                actualSpan.style.color = actualColor;
+                actualSpan.style.fontSize = (9 * scale) + 'px';
+                actualSpan.style.minWidth = (50 * scale) + 'px';
+                actualSpan.style.textAlign = 'right';
+                row.appendChild(actualSpan);
+
+                listWrapper.appendChild(row);
             }
         }
 
+        el.appendChild(listWrapper);
+
+        // Match count
         const bottomRow = document.createElement('div');
         Object.assign(bottomRow.style, {
-            marginTop: '8px',
-            paddingTop: '6px',
-            borderTop: '1px solid rgba(255,255,255,.1)'
+            marginTop: (8 * scale) + 'px',
+            paddingTop: (6 * scale) + 'px',
+            borderTop: '1px solid rgba(255,255,255,.1)',
+            color: '#70e0a8',
+            fontSize: (10 * scale) + 'px',
+            fontWeight: '700',
+            textAlign: 'center'
         });
-
-        bottomRow.appendChild(makeBtn('[Thoát Test]', function () {
-            BH.exitTestMode();
-        }, { color: '#ff66cc', border: '1px solid #ff66cc', bg: 'rgba(255,102,204,0.15)' }));
-
+        bottomRow.textContent = 'Match: ' + matchCount + '/' + totalCount;
         el.appendChild(bottomRow);
     }
 

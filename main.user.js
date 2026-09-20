@@ -4,29 +4,29 @@
 // ==UserScript==
 // @name         Bit Heroes - Auto Bot v2
 // @namespace    http://tampermonkey.net/
-// @version      2.0.7
 // @description  Auto bot cho Bit Heroes — template-based, click overlay
 // @match        *://*.kongregate.com/*
 // @match        *://*.bitheroesgame.com/*
 // @run-at       document-start
 // @grant        none
-// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.0.7/core/real-time.js
-// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.0.7/core/utils.js
-// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.0.7/core/pixel.js
-// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.0.7/core/click.js
-// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.0.7/core/storage.js
-// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.0.7/core/speed-hack.js
-// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.0.7/core/templates.js
-// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.0.7/core/step-types.js
-// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.0.7/core/flow-types.js
-// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.0.7/core/engine.js
-// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.0.7/ui/help.js
-// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.0.7/ui/marker.js
-// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.0.7/ui/magnifier.js
-// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.0.7/ui/setup.js
-// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.0.7/ui/test.js
-// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.0.7/ui/overlay.js
-// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.0.7/ui/template-picker.js
+// @version      2.0.8
+// @require https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.0.8/core/real-time.js
+// @require https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.0.8/core/utils.js
+// @require https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.0.8/core/pixel.js
+// @require https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.0.8/core/click.js
+// @require https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.0.8/core/storage.js
+// @require https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.0.8/core/speed-hack.js
+// @require https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.0.8/core/templates.js
+// @require https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.0.8/core/step-types.js
+// @require https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.0.8/core/flow-types.js
+// @require https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.0.8/core/engine.js
+// @require https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.0.8/ui/help.js
+// @require https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.0.8/ui/marker.js
+// @require https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.0.8/ui/magnifier.js
+// @require https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.0.8/ui/setup.js
+// @require https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.0.8/ui/test.js
+// @require https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.0.8/ui/overlay.js
+// @require https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.0.8/ui/template-picker.js
 // ==/UserScript==
 
 (function () {

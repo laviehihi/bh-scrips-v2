@@ -1,5 +1,5 @@
 // ui/setup.js
-// Setup mode — kéo thả marker để calibrate
+// Setup mode — setup từng nút một
 
 (function (global) {
     'use strict';
@@ -11,18 +11,14 @@
     const STABLE_REQUIRED = 3;
     const STABLE_TIMEOUT = 5000;
 
-    const ROW_START_X = 60;
-    const ROW_START_Y_OFFSET = 100;
-    const ROW_SPACING_X = 90;
-    const ROW_WRAP = 6;
-
     // =========================================================
     // STATE
     // =========================================================
 
     BH.setupMode = false;
     BH.setupCollapsed = false;
-    BH.setupMarkers = {};
+    BH.setupCurrentIndex = 0;   // step đang setup
+    BH.setupMarker = null;      // chỉ có 1 marker tại 1 thời điểm
     BH.setupTemplate = null;
     BH.stableTimerId = null;
 
@@ -33,7 +29,6 @@
     BH.enterSetupMode = function () {
         if (BH.setupMode) return;
 
-        // Không cho setup khi bot đang chạy
         if (BH.activeAuto) {
             BH.setMsg('⚠ Tắt bot trước khi setup');
             return;
@@ -46,57 +41,31 @@
             return;
         }
 
+        if (!template.steps || template.steps.length === 0) {
+            BH.setMsg('Template không có nút nào');
+            return;
+        }
+
         BH.setupMode = true;
         BH.setupCollapsed = false;
         BH.isSetupLock = true;
         BH.setupTemplate = template;
 
-        const savedState = BH.loadTemplateState(templateId) || {};
+        // Load calibration
+        BH.loadCalibration(templateId);
 
-        const uncalibrated = [];
-
+        // Bắt đầu từ step đầu tiên chưa calibrate
+        BH.setupCurrentIndex = 0;
         for (let i = 0; i < template.steps.length; i++) {
-            const step = template.steps[i];
-            const savedStep = savedState[step.id];
-
-            let markerX, markerY, calibrated;
-
-            if (savedStep && savedStep.x != null && savedStep.hex) {
-                step.x = savedStep.x;
-                step.y = savedStep.y;
-                step.hex = savedStep.hex;
-                step.tol = savedStep.tol || 15;
-                step.calibrated = true;
-
-                const canvas = BH.getCanvas();
-                const pos = canvas ? BH.bufferToClient(canvas, step.x, step.y) : { clientX: 0, clientY: 0 };
-                markerX = pos.clientX;
-                markerY = pos.clientY;
-                calibrated = true;
-            } else {
-                step.calibrated = false;
-                uncalibrated.push(step);
-                calibrated = false;
+            if (!template.steps[i].calibrated) {
+                BH.setupCurrentIndex = i;
+                break;
             }
-
-            const marker = BH.createMarker(step, {
-                x: calibrated ? markerX : 0,
-                y: calibrated ? markerY : 0
-            });
-
-            if (calibrated) {
-                BH.setMarkerState(marker, 'done', step.hex);
-            } else {
-                BH.setMarkerState(marker, 'pending');
-            }
-
-            BH.setupMarkers[step.id] = marker;
-            attachMarkerEvents(marker, step);
         }
 
-        layoutUncalibratedMarkers(uncalibrated);
+        showCurrentMarker();
 
-        BH.setMsg('Setup: kéo markers vào đúng vị trí');
+        BH.setMsg('Setup: kéo marker vào ' + template.steps[BH.setupCurrentIndex].label);
 
         if (BH.render) BH.render();
     };
@@ -108,10 +77,10 @@
         BH.setupCollapsed = false;
         BH.isSetupLock = false;
 
-        for (const id in BH.setupMarkers) {
-            BH.removeMarker(BH.setupMarkers[id]);
+        if (BH.setupMarker) {
+            BH.removeMarker(BH.setupMarker);
+            BH.setupMarker = null;
         }
-        BH.setupMarkers = {};
 
         if (BH.stableTimerId !== null) {
             BH.rt.clearTimeout(BH.stableTimerId);
@@ -136,30 +105,73 @@
     };
 
     // =========================================================
-    // LAYOUT MARKERS CHƯA CALIBRATE
+    // NAVIGATE STEPS
     // =========================================================
 
-    function layoutUncalibratedMarkers(steps) {
-        const baseY = window.innerHeight - ROW_START_Y_OFFSET;
+    BH.setupPrevStep = function () {
+        if (!BH.setupTemplate) return;
+        if (BH.setupCurrentIndex <= 0) return;
 
-        for (let i = 0; i < steps.length; i++) {
-            const step = steps[i];
-            const marker = BH.setupMarkers[step.id];
-            if (!marker) continue;
+        BH.setupCurrentIndex--;
+        showCurrentMarker();
+        BH.setMsg('Nút ' + (BH.setupCurrentIndex + 1) + ': ' + BH.setupTemplate.steps[BH.setupCurrentIndex].label);
+        if (BH.render) BH.render();
+    };
 
-            const row = Math.floor(i / ROW_WRAP);
-            const col = i % ROW_WRAP;
+    BH.setupNextStep = function () {
+        if (!BH.setupTemplate) return;
+        if (BH.setupCurrentIndex >= BH.setupTemplate.steps.length - 1) return;
 
-            const x = ROW_START_X + col * ROW_SPACING_X;
-            const y = baseY - row * 60;
+        BH.setupCurrentIndex++;
+        showCurrentMarker();
+        BH.setMsg('Nút ' + (BH.setupCurrentIndex + 1) + ': ' + BH.setupTemplate.steps[BH.setupCurrentIndex].label);
+        if (BH.render) BH.render();
+    };
 
-            marker.style.left = x + 'px';
-            marker.style.top = y + 'px';
+    // =========================================================
+    // SHOW CURRENT MARKER
+    // =========================================================
+
+    function showCurrentMarker() {
+        if (BH.setupMarker) {
+            BH.removeMarker(BH.setupMarker);
+            BH.setupMarker = null;
         }
+
+        const step = BH.setupTemplate.steps[BH.setupCurrentIndex];
+        if (!step) return;
+
+        let markerX, markerY;
+
+        if (step.calibrated) {
+            // Đã calibrate → hiện tại vị trí
+            const canvas = BH.getCanvas();
+            const pos = canvas ? BH.bufferToClient(canvas, step.x, step.y) : { clientX: 0, clientY: 0 };
+            markerX = pos.clientX;
+            markerY = pos.clientY;
+        } else {
+            // Chưa calibrate → hiện ở giữa màn hình
+            markerX = window.innerWidth / 2;
+            markerY = window.innerHeight / 2;
+        }
+
+        const marker = BH.createMarker(step, {
+            x: markerX,
+            y: markerY
+        });
+
+        if (step.calibrated) {
+            BH.setMarkerState(marker, 'done', step.hex);
+        } else {
+            BH.setMarkerState(marker, 'pending');
+        }
+
+        BH.setupMarker = marker;
+        attachMarkerEvents(marker, step);
     }
 
     // =========================================================
-    // MARKER EVENTS — DRAG
+    // MARKER EVENTS
     // =========================================================
 
     function attachMarkerEvents(marker, step) {
@@ -232,7 +244,6 @@
 
             marker.style.cursor = 'move';
 
-            // Force update marker position với giá trị pending mới nhất
             marker.style.left = pendingX + 'px';
             marker.style.top = pendingY + 'px';
 
@@ -241,7 +252,7 @@
     }
 
     // =========================================================
-    // STABLE CHECK — giống code mẫu
+    // STABLE CHECK
     // =========================================================
 
     function startStableCheck(marker, step, clientX, clientY) {
@@ -322,6 +333,20 @@
 
         BH.setMsg('✓ Đã lưu ' + step.label + ': ' + hex);
 
+        // Tự động chuyển sang step tiếp theo nếu còn
+        const nextIndex = BH.setupCurrentIndex + 1;
+        if (nextIndex < BH.setupTemplate.steps.length) {
+            BH.rt.setTimeout(function () {
+                if (!BH.setupMode) return;
+                BH.setupCurrentIndex = nextIndex;
+                showCurrentMarker();
+                BH.setMsg('Nút ' + (nextIndex + 1) + ': ' + BH.setupTemplate.steps[nextIndex].label);
+                if (BH.render) BH.render();
+            }, 800);
+        } else {
+            BH.setMsg('✓ Đã setup xong tất cả nút!');
+        }
+
         if (BH.render) BH.render();
     }
 
@@ -345,7 +370,7 @@
     }
 
     // =========================================================
-    // RESET STEP
+    // RESET STEP (từ overlay)
     // =========================================================
 
     BH.resetStep = function (stepId) {
@@ -363,18 +388,6 @@
         const state = BH.loadTemplateState(templateId) || {};
         delete state[stepId];
         BH.saveTemplateState(templateId, state);
-
-        const marker = BH.setupMarkers[stepId];
-        if (marker) {
-            BH.setMarkerState(marker, 'pending');
-
-            const uncalibrated = [];
-            for (let i = 0; i < BH.setupTemplate.steps.length; i++) {
-                const s = BH.setupTemplate.steps[i];
-                if (!s.calibrated) uncalibrated.push(s);
-            }
-            layoutUncalibratedMarkers(uncalibrated);
-        }
 
         BH.setMsg('Reset ' + step.label);
         if (BH.render) BH.render();
