@@ -158,9 +158,15 @@
                 if (!handler) continue;
 
                 if (handler.check(step)) {
+                    // Reset state khi bắt đầu vòng mới
+                    if (step.id === 'start') {
+                        BH.invaAutoCheckedAt = 0;
+                        BH.invaEscSent = false;
+                    }
+
                     onMatch(step);
 
-                    // Sau khi click confirmTeam hoặc yesNo → đợi 1s check auto
+                    // Sau khi click confirmTeam hoặc yesNo → đợi 1s rồi check auto
                     if (step.id === 'confirmTeam' || step.id === 'yesNo') {
                         BH.rt.setTimeout(function () {
                             if (BH.activeAuto === template.id) {
@@ -246,6 +252,8 @@
             } else {
                 BH.setMsg('Auto đã bật sẵn — bắt đầu đếm');
             }
+        } else {
+            BH.setMsg('Auto chưa setup — bỏ qua');
         }
 
         // Bắt đầu đếm dù có click hay không
