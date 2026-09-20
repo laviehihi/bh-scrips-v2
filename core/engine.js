@@ -29,7 +29,6 @@
         const template = BH.getTemplate(templateId);
         if (!template) return;
 
-        // Custom template: load steps từ localStorage
         if (templateId === 'custom') {
             const customSteps = BH.loadCustomSteps();
             if (customSteps && Array.isArray(customSteps) && customSteps.length > 0) {
@@ -138,11 +137,11 @@
         const options = BH.loadTemplateOptions(templateId);
         const clickDelay = options.clickDelay || template.defaultClickDelay || 500;
 
-        BH.setMsg(template.name + ' started · scan 0.3s · click delay ' + (clickDelay / 1000) + 's');
-
         if (BH.overlayState === 'expanded') {
             BH.overlayState = 'compact';
         }
+
+        BH.setMsg(template.name + ' started · scan 0.3s · click delay ' + (clickDelay / 1000) + 's');
 
         if (BH.render) BH.render();
     };
@@ -168,6 +167,9 @@
         }
 
         BH.setMsg(stopped.toUpperCase() + ' stopped');
+
+        // Force re-render để button đổi từ DỪNG → BẮT ĐẦU
+        if (BH.render) BH.render();
     };
 
     BH.toggleAuto = function (templateId) {

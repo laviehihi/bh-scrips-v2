@@ -391,6 +391,7 @@
 
     function renderLog(el, scale) {
         const log = document.createElement('div');
+        log.setAttribute('data-bh-log', '1');
         Object.assign(log.style, {
             marginTop: (6 * scale) + 'px',
             paddingTop: (4 * scale) + 'px',
@@ -650,15 +651,28 @@
     };
 
     // =========================================================
-    // SET MSG
+    // SET MSG — skip nếu giống, update text trực tiếp
     // =========================================================
 
     BH.setMsg = function (msg) {
+        if (BH.lastMsg === msg) return;
+
         BH.lastMsg = msg;
 
-        if (!BH.setupMode && BH.overlayState !== 'hidden') {
-            BH.render();
+        if (BH.setupMode || BH.overlayState === 'hidden') return;
+
+        // Compact: không render (không hiển thị log)
+        if (BH.overlayState === 'compact') return;
+
+        // Expanded: update text trực tiếp nếu log element tồn tại
+        const logEl = BH.overlayEl && BH.overlayEl.querySelector('[data-bh-log]');
+        if (logEl) {
+            logEl.textContent = msg;
+            return;
         }
+
+        // Fallback: re-render
+        BH.render();
     };
 
     // =========================================================

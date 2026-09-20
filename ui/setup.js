@@ -71,7 +71,6 @@
     BH.exitSetupMode = function () {
         if (!BH.setupMode) return;
 
-        // Lưu custom steps
         if (BH.setupTemplate && BH.setupTemplate.id === 'custom') {
             BH.saveCustomSteps(BH.setupTemplate.steps);
         }
@@ -132,7 +131,7 @@
     };
 
     // =========================================================
-    // CUSTOM: ADD / REMOVE STEP
+    // CUSTOM: ADD / REMOVE
     // =========================================================
 
     BH.setupAddRule = function () {
@@ -173,22 +172,18 @@
         const removeIdx = BH.setupCurrentIndex;
         const removed = steps[removeIdx];
 
-        // Xoá calibration trong storage
         const templateId = BH.setupTemplate.id;
         const state = BH.loadTemplateState(templateId) || {};
         delete state[removed.id];
         BH.saveTemplateState(templateId, state);
 
-        // Xoá step
         steps.splice(removeIdx, 1);
 
-        // Đánh lại số thứ tự id + label
         for (let i = 0; i < steps.length; i++) {
             const oldId = steps[i].id;
             const newId = 'rule' + (i + 1);
 
             if (oldId !== newId) {
-                // Move calibration trong storage
                 const state2 = BH.loadTemplateState(templateId) || {};
                 if (state2[oldId]) {
                     state2[newId] = state2[oldId];
@@ -203,7 +198,6 @@
 
         BH.setupTemplate.flow.order = steps.map(function (s) { return s.id; });
 
-        // Điều chỉnh index
         if (BH.setupCurrentIndex >= steps.length) {
             BH.setupCurrentIndex = steps.length - 1;
         }
@@ -229,16 +223,21 @@
         const step = BH.setupTemplate.steps[BH.setupCurrentIndex];
         if (!step) return;
 
-        let markerX, markerY;
+        let markerX = window.innerWidth / 2;
+        let markerY = window.innerHeight / 2;
 
         if (step.calibrated) {
             const canvas = BH.getCanvas();
-            const pos = canvas ? BH.bufferToClient(canvas, step.x, step.y) : { clientX: 0, clientY: 0 };
-            markerX = pos.clientX;
-            markerY = pos.clientY;
-        } else {
-            markerX = window.innerWidth / 2;
-            markerY = window.innerHeight / 2;
+            if (canvas && canvas.width > 0 && canvas.height > 0) {
+                const pos = BH.bufferToClient(canvas, step.x, step.y);
+
+                // Kiểm tra vị trí có nằm trong màn hình không
+                if (pos.clientX >= 0 && pos.clientX <= window.innerWidth &&
+                    pos.clientY >= 0 && pos.clientY <= window.innerHeight) {
+                    markerX = pos.clientX;
+                    markerY = pos.clientY;
+                }
+            }
         }
 
         const marker = BH.createMarker(step, {
@@ -255,9 +254,8 @@
         BH.setupMarker = marker;
         attachMarkerEvents(marker, step);
 
-        // Hiện kính lúp tại vị trí marker
         const canvas = BH.getCanvas();
-        if (canvas) {
+        if (canvas && canvas.width > 0 && canvas.height > 0) {
             const buf = BH.clientToBuffer(canvas, markerX, markerY);
             BH.showMagnifier(buf.x, buf.y, markerX, markerY);
         }
