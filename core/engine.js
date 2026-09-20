@@ -22,6 +22,32 @@
     BH.AUTO_STOP_TIMEOUT = 3 * 60 * 1000;
 
     // =========================================================
+    // LOAD CALIBRATION
+    // =========================================================
+
+    BH.loadCalibration = function (templateId) {
+        const template = BH.getTemplate(templateId);
+        if (!template) return;
+
+        const state = BH.loadTemplateState(templateId) || {};
+
+        for (let i = 0; i < template.steps.length; i++) {
+            const step = template.steps[i];
+            const saved = state[step.id];
+
+            if (saved && saved.x != null && saved.hex) {
+                step.x = saved.x;
+                step.y = saved.y;
+                step.hex = saved.hex;
+                step.tol = saved.tol || 15;
+                step.calibrated = true;
+            } else {
+                step.calibrated = false;
+            }
+        }
+    };
+
+    // =========================================================
     // DO CHECK
     // =========================================================
 
@@ -39,7 +65,6 @@
             return;
         }
 
-        // Lấy click delay từ options (user đổi) hoặc default
         const options = BH.loadTemplateOptions(template.id);
         const clickDelay = options.clickDelay || template.defaultClickDelay || 500;
 
@@ -91,6 +116,9 @@
             return;
         }
 
+        // Load calibration trước khi chạy
+        BH.loadCalibration(templateId);
+
         BH.activeAuto = templateId;
         BH.activeTemplateId = templateId;
         BH.lastActionTime = BH.rt.now();
@@ -105,7 +133,6 @@
 
         BH.setMsg(template.name + ' started · scan 0.3s · click delay ' + (clickDelay / 1000) + 's');
 
-        // Thu nhỏ overlay khi bắt đầu
         if (BH.overlayState === 'expanded') {
             BH.overlayState = 'compact';
         }
@@ -129,7 +156,6 @@
             BH.autoStopTimerId = null;
         }
 
-        // Clear pending click
         if (BH.clearPendingClick) {
             BH.clearPendingClick();
         }

@@ -1,12 +1,6 @@
 // core/step-types.js
 // Định nghĩa các loại step
 //
-// ĐỂ THÊM STEP TYPE MỚI:
-// 1. Thêm object vào BH.STEP_TYPES
-// 2. Object có check(step) + action(step)
-// 3. check() trả về true/false
-// 4. action() thực hiện click hoặc hành động
-//
 // Step types hiện có:
 // - click: check pixel → match → click (có delay)
 // - slot: check slot có người (không click)
@@ -20,17 +14,14 @@
     BH.STEP_TYPES = {};
 
     // =========================================================
-    // PENDING CLICK — chờ delay trước khi click
+    // PENDING CLICK
     // =========================================================
 
     BH.pendingClick = null;
 
     function scheduleClick(step, delay) {
-        // Nếu đang có pending click cho step khác → hủy
-        if (BH.pendingClick) {
-            BH.rt.clearTimeout(BH.pendingClick.timerId);
-            BH.pendingClick = null;
-        }
+        // Nếu đã có pending → bỏ qua, không schedule thêm
+        if (BH.pendingClick) return;
 
         const pending = {
             step: step,
@@ -56,7 +47,6 @@
 
             if (!stillMatch) return;
 
-            // Click
             BH.clickAtBuf(step.x, step.y);
             BH.lastActionTime = BH.rt.now();
             BH.setMsg(BH.nowTime() + ' • ' + step.label + ' → CLICK');

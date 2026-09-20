@@ -1,29 +1,32 @@
+// main.user.js
+// Entry point — Bit Heroes Bot v2
+
 // ==UserScript==
 // @name         Bit Heroes - Auto Bot v2
 // @namespace    http://tampermonkey.net/
-// @version      2.0.3
+// @version      2.0.7
 // @description  Auto bot cho Bit Heroes — template-based, click overlay
 // @match        *://*.kongregate.com/*
 // @match        *://*.bitheroesgame.com/*
 // @run-at       document-start
 // @grant        none
-// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.0.6/core/real-time.js
-// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.0.6/core/utils.js
-// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.0.6/core/pixel.js
-// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.0.6/core/click.js
-// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.0.6/core/storage.js
-// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.0.6/core/speed-hack.js
-// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.0.6/core/templates.js
-// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.0.6/core/step-types.js
-// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.0.6/core/flow-types.js
-// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.0.6/core/engine.js
-// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.0.6/ui/help.js
-// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.0.6/ui/marker.js
-// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.0.6/ui/magnifier.js
-// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.0.6/ui/setup.js
-// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.0.6/ui/test.js
-// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.0.6/ui/overlay.js
-// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.0.6/ui/template-picker.js
+// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.0.7/core/real-time.js
+// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.0.7/core/utils.js
+// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.0.7/core/pixel.js
+// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.0.7/core/click.js
+// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.0.7/core/storage.js
+// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.0.7/core/speed-hack.js
+// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.0.7/core/templates.js
+// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.0.7/core/step-types.js
+// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.0.7/core/flow-types.js
+// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.0.7/core/engine.js
+// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.0.7/ui/help.js
+// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.0.7/ui/marker.js
+// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.0.7/ui/magnifier.js
+// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.0.7/ui/setup.js
+// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.0.7/ui/test.js
+// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.0.7/ui/overlay.js
+// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.0.7/ui/template-picker.js
 // ==/UserScript==
 
 (function () {
@@ -108,7 +111,6 @@
 
     document.addEventListener('keydown', function (e) {
 
-        // Passthrough ON → chỉ cho Shift+` để thoát
         if (window.__BH__.passthrough) {
             if (e.shiftKey && (e.key === '`' || e.key === '~')) {
                 e.preventDefault();
@@ -118,7 +120,6 @@
             return;
         }
 
-        // + / = → tăng speed
         if (e.key === '=' || e.key === '+') {
             e.preventDefault();
             e.stopImmediatePropagation();
@@ -126,7 +127,6 @@
             return;
         }
 
-        // - → giảm speed
         if (e.key === '-') {
             e.preventDefault();
             e.stopImmediatePropagation();
@@ -134,7 +134,6 @@
             return;
         }
 
-        // ` = cycle overlay
         if (!e.shiftKey && (e.key === '`' || e.key === '~')) {
             e.preventDefault();
             e.stopImmediatePropagation();
@@ -142,7 +141,6 @@
             return;
         }
 
-        // Shift + ` = passthrough
         if (e.shiftKey && (e.key === '`' || e.key === '~')) {
             e.preventDefault();
             e.stopImmediatePropagation();
@@ -158,11 +156,10 @@
 
     function init() {
         window.__BH__.activeTemplateId = window.__BH__.loadActiveTemplate();
+        window.__BH__.loadCalibration(window.__BH__.activeTemplateId);
         window.__BH__.render();
 
-        // KHÔNG dùng interval render — tránh dropdown bị cụp
-
-        console.log('[BH Bot v2.0.3] Loaded');
+        console.log('[BH Bot v2.0.7] Loaded');
     }
 
     if (document.readyState === 'loading') {
