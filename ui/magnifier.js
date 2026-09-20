@@ -1,5 +1,5 @@
 // ui/magnifier.js
-// Kính lúp — hiện color map + đường dẫn đến marker
+// Kính lúp — hiện color map + đường dẫn đến marker (từ góc phải dưới)
 
 (function (global) {
     'use strict';
@@ -11,8 +11,9 @@
 
     BH.magnifier = null;
     BH.magnifierVisible = false;
-    BH.magnifierTarget = null;   // { x, y } clientX/Y của marker
-    BH.magnifierLine = null;     // SVG line element
+    BH.magnifierLine = null;
+    BH.magnifierTimerId = null;
+    BH.magnifierTarget = null;   // { bufX, bufY, clientX, clientY }
 
     // =========================================================
     // ENSURE ELEMENTS
@@ -105,17 +106,20 @@
     }
 
     // =========================================================
-    // SHOW / HIDE
+    // RENDER (dùng chung cho show + refresh)
     // =========================================================
 
-    BH.showMagnifier = function (bufX, bufY, targetClientX, targetClientY) {
-        BH.ensureMagnifier();
+    function renderMagnifier() {
+        if (!BH.magnifierTarget) return;
 
         const canvas = BH.getCanvas();
         if (!canvas) return;
 
         const gl = BH.getGL(canvas);
         if (!gl) return;
+
+        const bufX = BH.magnifierTarget.bufX;
+        const bufY = BH.magnifierTarget.bufY;
 
         const centerPixel = BH.readPixel(gl, bufX, bufY);
         const map = BH.readColorMap(gl, bufX, bufY, RADIUS);
@@ -148,19 +152,18 @@
         BH.magnifier.style.display = 'block';
         BH.magnifierVisible = true;
 
-        // Vẽ đường từ tâm kính lúp đến marker
-        if (targetClientX != null && targetClientY != null) {
-            updateLine(targetClientX, targetClientY);
-        }
-    };
+        updateLine(BH.magnifierTarget.clientX, BH.magnifierTarget.clientY);
+    }
+
+    // =========================================================
+    // LINE — từ góc phải dưới màn hình đến marker
+    // =========================================================
 
     function updateLine(targetX, targetY) {
-        if (!BH.magnifier || !BH.magnifierLine) return;
+        if (!BH.magnifierLine) return;
 
-        // Tâm kính lúp
-        const rect = BH.magnifier.getBoundingClientRect();
-        const lineX1 = rect.right;
-        const lineY1 = rect.top + rect.height / 2;
+        const lineX1 = window.innerWidth - 30;
+        const lineY1 = window.innerHeight - 30;
 
         BH.magnifierLine.setAttribute('x1', lineX1);
         BH.magnifierLine.setAttribute('y1', lineY1);
@@ -169,6 +172,31 @@
         BH.magnifierLine.style.display = 'block';
     }
 
+    // =========================================================
+    // SHOW / HIDE
+    // =========================================================
+
+    BH.showMagnifier = function (bufX, bufY, targetClientX, targetClientY) {
+        BH.ensureMagnifier();
+
+        BH.magnifierTarget = {
+            bufX: bufX,
+            bufY: bufY,
+            clientX: targetClientX,
+            clientY: targetClientY
+        };
+
+        renderMagnifier();
+
+        // Auto-refresh mỗi 200ms (để kính lúp luôn "sống")
+        if (BH.magnifierTimerId === null) {
+            BH.magnifierTimerId = BH.rt.setInterval(function () {
+                if (!BH.magnifierVisible) return;
+                renderMagnifier();
+            }, 200);
+        }
+    };
+
     BH.hideMagnifier = function () {
         if (BH.magnifier) {
             BH.magnifier.style.display = 'none';
@@ -176,19 +204,25 @@
         if (BH.magnifierLine) {
             BH.magnifierLine.style.display = 'none';
         }
+
+        if (BH.magnifierTimerId !== null) {
+            BH.rt.clearInterval(BH.magnifierTimerId);
+            BH.magnifierTimerId = null;
+        }
+
         BH.magnifierVisible = false;
+        BH.magnifierTarget = null;
     };
 
     // =========================================================
-    // UPDATE TARGET (khi marker di chuyển)
+    // UPDATE TARGET
     // =========================================================
 
-    BH.updateMagnifierTarget = function (targetX, targetY) {
-        if (!BH.magnifierVisible) return;
-        if (!BH.magnifierLine) return;
-
-        BH.magnifierLine.setAttribute('x2', targetX);
-        BH.magnifierLine.setAttribute('y2', targetY);
+    BH.updateMagnifierTarget = function (clientX, clientY) {
+        if (!BH.magnifierTarget) return;
+        BH.magnifierTarget.clientX = clientX;
+        BH.magnifierTarget.clientY = clientY;
+        updateLine(clientX, clientY);
     };
 
 })(window);

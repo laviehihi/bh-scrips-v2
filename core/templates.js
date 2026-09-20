@@ -1,13 +1,5 @@
 // core/templates.js
 // Định nghĩa các template hoạt động
-//
-// ĐỂ THÊM HOẠT ĐỘNG MỚI:
-// 1. Thêm 1 entry vào BH.TEMPLATES
-// 2. Define steps + flow
-// 3. Không cần sửa file khác
-//
-// Step types hiện có: click, slot, optional
-// Flow types hiện có: sequential, wb
 
 (function (global) {
     'use strict';
@@ -74,8 +66,8 @@
                 },
                 {
                     id: 'yesNo',
-                    label: 'Yes/No (solo)',
-                    hint: 'Popup xác nhận khi solo',
+                    label: 'Yes/No (confirm)',
+                    hint: 'Popup xác nhận khi chưa full team (option)',
                     type: 'optional',
                     required: false
                 },
@@ -120,8 +112,8 @@
                 },
                 {
                     id: 'yesNo',
-                    label: 'Yes/No (solo)',
-                    hint: 'Popup xác nhận khi solo',
+                    label: 'Yes/No (confirm)',
+                    hint: 'Popup xác nhận khi chưa full team (option)',
                     type: 'optional',
                     required: false
                 },
@@ -141,7 +133,7 @@
         },
 
         // =========================================================
-        // WB (World Boss)
+        // WB
         // =========================================================
 
         wb: {
@@ -167,42 +159,42 @@
                 {
                     id: 'slot1',
                     label: 'Slot 1',
-                    hint: 'Vị trí slot 1',
+                    hint: 'Nút invite ở vị trí 1',
                     type: 'slot',
                     required: true
                 },
                 {
                     id: 'slot2',
                     label: 'Slot 2',
-                    hint: 'Vị trí slot 2',
+                    hint: 'Nút invite ở vị trí 2',
                     type: 'slot',
                     required: true
                 },
                 {
                     id: 'slot3',
                     label: 'Slot 3',
-                    hint: 'Vị trí slot 3',
+                    hint: 'Nút invite ở vị trí 3',
                     type: 'slot',
                     required: true
                 },
                 {
                     id: 'slot4',
                     label: 'Slot 4',
-                    hint: 'Vị trí slot 4 (nếu WB có)',
+                    hint: 'Nút invite ở vị trí 4 (nếu WB có)',
                     type: 'slot',
                     required: false
                 },
                 {
                     id: 'slot5',
                     label: 'Slot 5',
-                    hint: 'Vị trí slot 5 (nếu WB có)',
+                    hint: 'Nút invite ở vị trí 5 (nếu WB có)',
                     type: 'slot',
                     required: false
                 },
                 {
                     id: 'start',
                     label: 'Start (chủ key)',
-                    hint: 'Nút Start/Ready khi đủ người',
+                    hint: 'Nút start khi đủ người khi là chủ key',
                     type: 'click',
                     required: true
                 },
@@ -216,7 +208,7 @@
                 {
                     id: 'yes',
                     label: 'Yes (confirm)',
-                    hint: 'Popup xác nhận nếu chưa full',
+                    hint: 'Popup xác nhận khi chưa full team (option)',
                     type: 'optional',
                     required: false
                 },
@@ -253,10 +245,18 @@
             name: 'Custom Rules',
             description: 'Tự thêm rules — flex cho mọi tình huống',
             defaultClickDelay: 500,
-            steps: [],
+            steps: [
+                {
+                    id: 'rule1',
+                    label: 'Rule 1',
+                    hint: 'Kéo marker vào nút cần click',
+                    type: 'click',
+                    required: false
+                }
+            ],
             flow: {
                 type: 'sequential',
-                order: [],
+                order: ['rule1'],
                 loop: true
             }
         }

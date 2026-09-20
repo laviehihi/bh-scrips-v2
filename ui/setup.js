@@ -1,5 +1,5 @@
 // ui/setup.js
-// Setup mode — setup từng nút một
+// Setup mode — setup từng nút một, hỗ trợ custom template
 
 (function (global) {
     'use strict';
@@ -71,6 +71,11 @@
     BH.exitSetupMode = function () {
         if (!BH.setupMode) return;
 
+        // Lưu custom steps
+        if (BH.setupTemplate && BH.setupTemplate.id === 'custom') {
+            BH.saveCustomSteps(BH.setupTemplate.steps);
+        }
+
         BH.setupMode = false;
         BH.setupCollapsed = false;
         BH.isSetupLock = false;
@@ -103,7 +108,7 @@
     };
 
     // =========================================================
-    // NAVIGATE STEPS
+    // NAVIGATE
     // =========================================================
 
     BH.setupPrevStep = function () {
@@ -123,6 +128,91 @@
         BH.setupCurrentIndex++;
         showCurrentMarker();
         BH.setMsg('Nút ' + (BH.setupCurrentIndex + 1) + ': ' + BH.setupTemplate.steps[BH.setupCurrentIndex].label);
+        if (BH.render) BH.render();
+    };
+
+    // =========================================================
+    // CUSTOM: ADD / REMOVE STEP
+    // =========================================================
+
+    BH.setupAddRule = function () {
+        if (!BH.setupTemplate) return;
+        if (BH.setupTemplate.id !== 'custom') return;
+
+        const steps = BH.setupTemplate.steps;
+        const newIndex = steps.length + 1;
+        const newId = 'rule' + newIndex;
+
+        steps.push({
+            id: newId,
+            label: 'Rule ' + newIndex,
+            hint: 'Kéo marker vào nút cần click',
+            type: 'click',
+            required: false
+        });
+
+        BH.setupTemplate.flow.order = steps.map(function (s) { return s.id; });
+
+        BH.setupCurrentIndex = steps.length - 1;
+        showCurrentMarker();
+
+        BH.setMsg('Đã thêm Rule ' + newIndex);
+        if (BH.render) BH.render();
+    };
+
+    BH.setupRemoveCurrent = function () {
+        if (!BH.setupTemplate) return;
+        if (BH.setupTemplate.id !== 'custom') return;
+
+        const steps = BH.setupTemplate.steps;
+        if (steps.length <= 1) {
+            BH.setMsg('Phải còn ít nhất 1 rule');
+            return;
+        }
+
+        const removeIdx = BH.setupCurrentIndex;
+        const removed = steps[removeIdx];
+
+        // Xoá calibration trong storage
+        const templateId = BH.setupTemplate.id;
+        const state = BH.loadTemplateState(templateId) || {};
+        delete state[removed.id];
+        BH.saveTemplateState(templateId, state);
+
+        // Xoá step
+        steps.splice(removeIdx, 1);
+
+        // Đánh lại số thứ tự id + label
+        for (let i = 0; i < steps.length; i++) {
+            const oldId = steps[i].id;
+            const newId = 'rule' + (i + 1);
+
+            if (oldId !== newId) {
+                // Move calibration trong storage
+                const state2 = BH.loadTemplateState(templateId) || {};
+                if (state2[oldId]) {
+                    state2[newId] = state2[oldId];
+                    delete state2[oldId];
+                    BH.saveTemplateState(templateId, state2);
+                }
+
+                steps[i].id = newId;
+                steps[i].label = 'Rule ' + (i + 1);
+            }
+        }
+
+        BH.setupTemplate.flow.order = steps.map(function (s) { return s.id; });
+
+        // Điều chỉnh index
+        if (BH.setupCurrentIndex >= steps.length) {
+            BH.setupCurrentIndex = steps.length - 1;
+        }
+
+        BH.setupCurrentIndex = Math.max(0, Math.min(BH.setupCurrentIndex, steps.length - 1));
+
+        showCurrentMarker();
+
+        BH.setMsg('Đã xoá ' + removed.label);
         if (BH.render) BH.render();
     };
 
@@ -336,7 +426,6 @@
 
         BH.setMsg('✓ Đã lưu ' + step.label + ': ' + hex);
 
-        // Tự động chuyển sang step tiếp
         const nextIndex = BH.setupCurrentIndex + 1;
         if (nextIndex < BH.setupTemplate.steps.length) {
             BH.rt.setTimeout(function () {

@@ -1,5 +1,5 @@
 // core/storage.js
-// localStorage: rules, template state, overlay position
+// localStorage: rules, template state, custom steps
 
 (function (global) {
     'use strict';
@@ -42,7 +42,7 @@
     };
 
     // =========================================================
-    // TEMPLATE STATE — calibration của từng template
+    // TEMPLATE STATE
     // =========================================================
 
     BH.loadTemplateState = function (templateId) {
@@ -58,7 +58,7 @@
     };
 
     // =========================================================
-    // TEMPLATE OPTIONS — delay, partySize, ...
+    // TEMPLATE OPTIONS
     // =========================================================
 
     BH.loadTemplateOptions = function (templateId) {
@@ -67,18 +67,6 @@
 
     BH.saveTemplateOptions = function (templateId, options) {
         return BH.storageSet('opt_' + templateId, options);
-    };
-
-    // =========================================================
-    // OVERLAY POSITION
-    // =========================================================
-
-    BH.loadOverlayPos = function () {
-        return BH.storageGet('overlay_pos', { x: null, y: null });
-    };
-
-    BH.saveOverlayPos = function (x, y) {
-        return BH.storageSet('overlay_pos', { x: x, y: y });
     };
 
     // =========================================================
@@ -91,6 +79,22 @@
 
     BH.saveActiveTemplate = function (id) {
         return BH.storageSet('active_template', id);
+    };
+
+    // =========================================================
+    // CUSTOM STEPS
+    // =========================================================
+
+    BH.loadCustomSteps = function () {
+        return BH.storageGet('custom_steps', null);
+    };
+
+    BH.saveCustomSteps = function (steps) {
+        return BH.storageSet('custom_steps', steps);
+    };
+
+    BH.clearCustomSteps = function () {
+        BH.storageRemove('custom_steps');
     };
 
 })(window);

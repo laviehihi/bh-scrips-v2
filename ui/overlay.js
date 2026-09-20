@@ -1,6 +1,6 @@
 // ui/overlay.js
 // Overlay chính — compact / expanded / setup
-// Auto-scale theo canvas size
+// Auto-scale theo window size
 
 (function (global) {
     'use strict';
@@ -15,20 +15,16 @@
     BH.passthrough = false;
 
     // =========================================================
-    // AUTO-SCALE
+    // AUTO-SCALE — theo window.innerWidth
     // =========================================================
 
     function getOverlayScale() {
-        const canvas = BH.getCanvas();
-        if (!canvas) return 1;
+        const w = window.innerWidth;
 
-        const rect = canvas.getBoundingClientRect();
-        const w = rect.width;
-
-        if (w < 500) return 0.75;
-        if (w < 800) return 0.9;
-        if (w < 1200) return 1;
-        if (w < 1600) return 1.1;
+        if (w < 800) return 0.75;
+        if (w < 1200) return 0.9;
+        if (w < 1600) return 1;
+        if (w < 2000) return 1.1;
         return 1.2;
     }
 
@@ -119,6 +115,26 @@
     }
 
     // =========================================================
+    // COLOR DOT
+    // =========================================================
+
+    function makeColorDot(hex, size) {
+        const dot = document.createElement('span');
+        Object.assign(dot.style, {
+            display: 'inline-block',
+            width: (size || 8) + 'px',
+            height: (size || 8) + 'px',
+            background: hex || '#444',
+            border: '1px solid rgba(255,255,255,0.3)',
+            borderRadius: '2px',
+            marginRight: '4px',
+            verticalAlign: 'middle',
+            flex: 'none'
+        });
+        return dot;
+    }
+
+    // =========================================================
     // RENDER COMPACT
     // =========================================================
 
@@ -155,7 +171,6 @@
         nameSpan.style.fontWeight = '700';
         row.appendChild(nameSpan);
 
-        // WB → hiện số người
         if (template && template.id === 'wb' && BH.activeAuto === 'wb') {
             const countSpan = document.createElement('span');
             const current = BH.wbCurrentPlayers || 0;
@@ -213,7 +228,7 @@
         });
         header.innerHTML = `
             <span style="color:#fff;font-weight:700;font-size:${12 * scale}px;letter-spacing:.3px;">BH BOT</span>
-            <span style="color:#777;font-size:${10 * scale}px;">v2.0</span>
+            <span style="color:#777;font-size:${10 * scale}px;">v2.1</span>
         `;
         el.appendChild(header);
 
@@ -318,7 +333,7 @@
     }
 
     // =========================================================
-    // START/STOP + TOOLS (1 dòng)
+    // START/STOP + TOOLS
     // =========================================================
 
     function renderStartStopTools(el, template, scale) {
@@ -436,6 +451,7 @@
 
         el.innerHTML = '';
 
+        // Header
         const header = document.createElement('div');
         Object.assign(header.style, {
             display: 'flex',
@@ -470,6 +486,7 @@
         header.appendChild(btnGroup);
         el.appendChild(header);
 
+        // Step info
         const total = BH.setupTemplate ? BH.setupTemplate.steps.length : 0;
         const curIndex = BH.setupCurrentIndex;
         const curStep = BH.setupTemplate ? BH.setupTemplate.steps[curIndex] : null;
@@ -482,26 +499,48 @@
                 lineHeight: '1.6'
             });
 
-            info.innerHTML = `
-                <div style="color:#fff;font-weight:700;margin-bottom:4px;">
-                    Nút ${curIndex + 1}/${total}: ${curStep.label}
-                </div>
-                <div style="color:#888;font-size:${10 * scale}px;">
-                    ${curStep.hint || ''}
-                </div>
-                <div style="color:${curStep.calibrated ? '#70e0a8' : '#ffaa33'};font-size:${10 * scale}px;margin-top:4px;">
-                    ${curStep.calibrated ? '✓ ' + curStep.hex : '⚠ Chưa setup'}
-                </div>
-            `;
+            // Tạo DOM để chèn color dot
+            const titleLine = document.createElement('div');
+            titleLine.style.color = '#fff';
+            titleLine.style.fontWeight = '700';
+            titleLine.style.marginBottom = '4px';
+            titleLine.textContent = 'Nút ' + (curIndex + 1) + '/' + total + ': ' + curStep.label;
+            info.appendChild(titleLine);
+
+            const hintLine = document.createElement('div');
+            hintLine.style.color = '#888';
+            hintLine.style.fontSize = (10 * scale) + 'px';
+            hintLine.textContent = curStep.hint || '';
+            info.appendChild(hintLine);
+
+            const statusLine = document.createElement('div');
+            statusLine.style.fontSize = (10 * scale) + 'px';
+            statusLine.style.marginTop = '4px';
+            statusLine.style.display = 'flex';
+            statusLine.style.alignItems = 'center';
+
+            if (curStep.calibrated) {
+                statusLine.style.color = '#70e0a8';
+                statusLine.appendChild(makeColorDot(curStep.hex, 10 * scale));
+                const hexSpan = document.createElement('span');
+                hexSpan.textContent = curStep.hex;
+                statusLine.appendChild(hexSpan);
+            } else {
+                statusLine.style.color = '#ffaa33';
+                statusLine.textContent = '⚠ Chưa setup';
+            }
+            info.appendChild(statusLine);
 
             el.appendChild(info);
         }
 
+        // Nav row
         const navRow = document.createElement('div');
         Object.assign(navRow.style, {
             display: 'flex',
-            gap: '6px',
-            marginBottom: (8 * scale) + 'px'
+            gap: '4px',
+            marginBottom: (8 * scale) + 'px',
+            flexWrap: 'wrap'
         });
 
         navRow.appendChild(makeBtn('← Trước', function () {
@@ -518,8 +557,31 @@
             flex: '1'
         }));
 
+        // Custom: thêm / xoá rule
+        if (BH.setupTemplate && BH.setupTemplate.id === 'custom') {
+            navRow.appendChild(makeBtn('+ Thêm', function () {
+                BH.setupAddRule();
+            }, {
+                color: '#70e0a8',
+                border: '1px solid #70e0a8',
+                bg: 'rgba(112,224,168,0.15)',
+                flex: '1'
+            }));
+
+            navRow.appendChild(makeBtn('× Xoá', function () {
+                BH.setupRemoveCurrent();
+            }, {
+                color: '#ff6666',
+                border: '1px solid #ff6666',
+                bg: 'rgba(255,102,102,0.15)',
+                flex: '1',
+                disabled: total <= 1
+            }));
+        }
+
         el.appendChild(navRow);
 
+        // Progress dots
         const progressRow = document.createElement('div');
         Object.assign(progressRow.style, {
             display: 'flex',
@@ -610,5 +672,13 @@
 
         BH.render();
     };
+
+    // =========================================================
+    // RESIZE LISTENER
+    // =========================================================
+
+    window.addEventListener('resize', function () {
+        if (BH.render) BH.render();
+    });
 
 })(window);

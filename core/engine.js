@@ -1,5 +1,5 @@
 // core/engine.js
-// Runtime engine — gọi flow handler tương ứng
+// Runtime engine
 
 (function (global) {
     'use strict';
@@ -28,6 +28,15 @@
     BH.loadCalibration = function (templateId) {
         const template = BH.getTemplate(templateId);
         if (!template) return;
+
+        // Custom template: load steps từ localStorage
+        if (templateId === 'custom') {
+            const customSteps = BH.loadCustomSteps();
+            if (customSteps && Array.isArray(customSteps) && customSteps.length > 0) {
+                template.steps = customSteps;
+                template.flow.order = customSteps.map(function (s) { return s.id; });
+            }
+        }
 
         const state = BH.loadTemplateState(templateId) || {};
 
@@ -170,7 +179,7 @@
     };
 
     // =========================================================
-    // SET CLICK DELAY CHO TEMPLATE
+    // SET CLICK DELAY
     // =========================================================
 
     BH.setTemplateClickDelay = function (templateId, ms) {
