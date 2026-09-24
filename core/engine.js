@@ -22,6 +22,30 @@
     BH.AUTO_STOP_TIMEOUT = 3 * 60 * 1000;
 
     // =========================================================
+    // RESET RUNTIME STATE
+    // =========================================================
+
+    function resetRuntimeState() {
+        // Inva state
+        BH.invaAutoCheckedAt = 0;
+        BH.invaEscSent = false;
+
+        // Cooldown (nếu có dùng)
+        BH.clickCooldownUntil = 0;
+
+        // Keypress state (nếu có dùng)
+        BH.keypressSent = {};
+
+        // Wait state (nếu có dùng)
+        BH.waitStepDone = {};
+
+        // Pending click
+        if (BH.clearPendingClick) {
+            BH.clearPendingClick();
+        }
+    }
+
+    // =========================================================
     // LOAD CALIBRATION
     // =========================================================
 
@@ -62,6 +86,11 @@
     BH.doCheck = function () {
         if (!BH.activeAuto) return;
         if (BH.isSetupLock) return;
+
+        // Cooldown sau click
+        if (BH.clickCooldownUntil && BH.rt.now() < BH.clickCooldownUntil) {
+            return;
+        }
 
         const template = BH.getTemplate(BH.activeAuto);
         if (!template) return;
@@ -125,6 +154,9 @@
 
         BH.loadCalibration(templateId);
 
+        // Reset state trước khi bắt đầu
+        resetRuntimeState();
+
         BH.activeAuto = templateId;
         BH.activeTemplateId = templateId;
         BH.lastActionTime = BH.rt.now();
@@ -162,13 +194,11 @@
             BH.autoStopTimerId = null;
         }
 
-        if (BH.clearPendingClick) {
-            BH.clearPendingClick();
-        }
+        // Reset state khi stop
+        resetRuntimeState();
 
         BH.setMsg(stopped.toUpperCase() + ' stopped');
 
-        // Force re-render để button đổi từ DỪNG → BẮT ĐẦU
         if (BH.render) BH.render();
     };
 
