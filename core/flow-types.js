@@ -43,6 +43,7 @@
 
         if (partySize === 1) {
             BH.wbCurrentPlayers = 1;
+            updateWBCountUI();
             return checkNonSlotSteps(template, onMatch);
         }
 
@@ -73,6 +74,9 @@
         const currentPlayers = BH.countWBPlayers(template);
         BH.wbCurrentPlayers = currentPlayers;
 
+        // Update overlay mỗi lần đếm
+        updateWBCountUI();
+
         if (currentPlayers < partySize) {
             BH.setMsg('Chờ member (' + currentPlayers + '/' + partySize + ')');
             return false;
@@ -80,6 +84,25 @@
 
         return checkNonSlotSteps(template, onMatch);
     };
+
+    // =========================================================
+    // UPDATE WB COUNT UI
+    // =========================================================
+
+    function updateWBCountUI() {
+        if (BH.overlayState !== 'compact') return;
+        if (!BH.overlayEl) return;
+
+        const countEl = BH.overlayEl.querySelector('[data-bh-wb-count]');
+        if (!countEl) return;
+
+        const current = BH.wbCurrentPlayers || 0;
+        const total = BH.wbPartySize || 1;
+        const isFull = current >= total;
+
+        countEl.textContent = current + '/' + total;
+        countEl.style.color = isFull ? '#70e0a8' : '#ffaa33';
+    }
 
     function checkNonSlotSteps(template, onMatch) {
         const order = template.flow.order || [];
@@ -139,13 +162,12 @@
         const options = BH.loadTemplateOptions(template.id);
         const duration = options.duration || 10;
 
-        // Reset state lần đầu
         if (BH.invaAutoCheckedAt == null) {
             BH.invaAutoCheckedAt = 0;
             BH.invaEscSent = false;
         }
 
-        // Phase 1: chưa check auto → check steps trước auto
+        // Phase 1: chưa check auto
         if (!BH.invaAutoCheckedAt) {
             const beforeAuto = ['start', 'confirmTeam', 'yesNo'];
 
@@ -158,7 +180,6 @@
                 if (!handler) continue;
 
                 if (handler.check(step)) {
-                    // Reset state khi bắt đầu vòng mới
                     if (step.id === 'start') {
                         BH.invaAutoCheckedAt = 0;
                         BH.invaEscSent = false;
@@ -166,13 +187,13 @@
 
                     onMatch(step);
 
-                    // Sau khi click confirmTeam hoặc yesNo → đợi 1s rồi check auto
+                    // Đổi 1s → 2s
                     if (step.id === 'confirmTeam' || step.id === 'yesNo') {
                         BH.rt.setTimeout(function () {
                             if (BH.activeAuto === template.id) {
                                 checkAutoAndStartTimer(template);
                             }
-                        }, 1000);
+                        }, 2000);
                     }
 
                     return true;
@@ -182,7 +203,7 @@
             return false;
         }
 
-        // Phase 2: đã check auto → đếm X giây
+        // Phase 2: đếm X giây
         const elapsed = BH.rt.now() - BH.invaAutoCheckedAt;
 
         if (elapsed < duration * 1000) {
@@ -191,7 +212,7 @@
             return false;
         }
 
-        // Phase 3: hết X giây → gửi ESC
+        // Phase 3: hết X giây → ESC
         if (!BH.invaEscSent) {
             BH.dispatchKeyPress('Escape');
             BH.invaEscSent = true;
@@ -206,7 +227,7 @@
             return true;
         }
 
-        // Phase 4: sau ESC → check yesLeave, returnHome
+        // Phase 4: sau ESC
         const afterEsc = ['yesLeave', 'returnHome'];
 
         for (let i = 0; i < afterEsc.length; i++) {
@@ -246,7 +267,6 @@
             const tol = autoStep.tol || 15;
 
             if (pixel && BH.matchHex(pixel, autoStep.hex, tol)) {
-                // Auto đang tắt → click để bật
                 BH.clickAtBuf(autoStep.x, autoStep.y);
                 BH.setMsg('Đã bật auto');
             } else {
@@ -256,7 +276,6 @@
             BH.setMsg('Auto chưa setup — bỏ qua');
         }
 
-        // Bắt đầu đếm dù có click hay không
         BH.invaAutoCheckedAt = BH.rt.now();
 
         if (BH.render) BH.render();

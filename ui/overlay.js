@@ -173,6 +173,8 @@
 
         if (template && template.id === 'wb' && BH.activeAuto === 'wb') {
             const countSpan = document.createElement('span');
+            countSpan.setAttribute('data-bh-wb-count', '1');
+
             const current = BH.wbCurrentPlayers || 0;
             const total = BH.wbPartySize || 1;
             const isFull = current >= total;
@@ -576,37 +578,8 @@
             statusLine.style.marginTop = '4px';
             statusLine.style.display = 'flex';
             statusLine.style.alignItems = 'center';
-            statusLine.style.flexWrap = 'wrap';
-            statusLine.style.gap = '4px';
 
-            if (curStep.type === 'toggle') {
-                // Hiện 2 màu
-                const offSpan = document.createElement('span');
-                offSpan.style.color = curStep.hexOff ? '#70e0a8' : '#ffaa33';
-                if (curStep.hexOff) {
-                    offSpan.appendChild(makeColorDot(curStep.hexOff, 10 * scale));
-                }
-                offSpan.textContent = 'TẮT: ' + (curStep.hexOff || '---');
-                statusLine.appendChild(offSpan);
-
-                const onSpan = document.createElement('span');
-                onSpan.style.color = curStep.hexOn ? '#70e0a8' : '#ffaa33';
-                if (curStep.hexOn) {
-                    onSpan.appendChild(makeColorDot(curStep.hexOn, 10 * scale));
-                }
-                onSpan.textContent = 'BẬT: ' + (curStep.hexOn || '---');
-                statusLine.appendChild(onSpan);
-
-                if (BH.setupTogglePhase === 2) {
-                    const phase = document.createElement('div');
-                    phase.style.color = '#ff66cc';
-                    phase.style.fontWeight = '700';
-                    phase.style.marginTop = '4px';
-                    phase.style.fontSize = (10 * scale) + 'px';
-                    phase.textContent = '⚡ Bấm nút auto trong game để BẬT, rồi kéo marker lại';
-                    info.appendChild(phase);
-                }
-            } else if (curStep.calibrated) {
+            if (curStep.calibrated) {
                 statusLine.style.color = '#70e0a8';
                 statusLine.appendChild(makeColorDot(curStep.hex, 10 * scale));
                 const hexSpan = document.createElement('span');
@@ -616,10 +589,7 @@
                 statusLine.style.color = '#ffaa33';
                 statusLine.textContent = '⚠ Chưa setup';
             }
-
-            if (curStep.type !== 'toggle' || BH.setupTogglePhase !== 2) {
-                info.appendChild(statusLine);
-            }
+            info.appendChild(statusLine);
 
             el.appendChild(info);
         }
