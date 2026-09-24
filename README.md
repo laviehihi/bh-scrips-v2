@@ -342,8 +342,6 @@ localStorage của trình duyệt. F5 không mất. Nhưng xoá cache trình duy
 
 ---
 
-## 📜 License
-
 ## 📜 Disclaimer
 
 Bot chỉ dùng cho mục đích học tập/cá nhân.
