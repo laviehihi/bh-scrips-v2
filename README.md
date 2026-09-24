@@ -1,6 +1,6 @@
-# Bit Heroes Auto Bot
+# BH Auto Bot
 
-Bot tự động chơi Bit Heroes — pixel-based, điều khiển qua overlay click.
+Bot tự động chơi BH — pixel-based, điều khiển qua overlay click.
 
 **Repo:** https://github.com/laviehihi/bh-scrips-v2
 
@@ -338,7 +338,6 @@ localStorage của trình duyệt. F5 không mất. Nhưng xoá cache trình duy
 - **Không đổi kích cỡ cửa sổ** sau khi setup.
 - **Không dùng speed quá cao** (> 5×) — có thể lag.
 - **Setup khi game đang ở đúng màn** — bot không tự navigate.
-- **Backup rules** trước khi xoá cache trình duyệt.
 
 ---
 
