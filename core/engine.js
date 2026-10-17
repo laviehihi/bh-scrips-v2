@@ -47,6 +47,29 @@
         if (BH.clearPendingClick) BH.clearPendingClick();
     }
 
+    // =========================================================
+    // RESOLVE ACTIVITY ID FROM TEMPLATE ID
+    // Template id có thể khác activity id (inva → invasion, tg → trials/gauntlet)
+    // =========================================================
+
+    function resolveActivityForTemplate(templateId) {
+        // 1-1 mapping đặc biệt
+        if (templateId === 'inva') return 'invasion';
+        if (templateId === 'rerun') return 'dungeon';
+
+        // tg: trials hoặc gauntlet — chọn cái có region đã chụp
+        if (templateId === 'tg') {
+            if (BH.getScreenRegion('icon_trials')) return 'trials';
+            if (BH.getScreenRegion('icon_gauntlet')) return 'gauntlet';
+            return 'trials';
+        }
+
+        // Còn lại: templateId trùng activityId (pvp, wb, expedition, gvp)
+        return templateId;
+    }
+
+    BH.resolveActivityForTemplate = resolveActivityForTemplate;
+
     // LOAD CALIBRATION
     BH.loadCalibration = function (templateId) {
         const template = BH.getTemplate(templateId);
@@ -192,6 +215,9 @@
             BH._navigatedForActivity = true;
             BH.navigationPending = true;
 
+            // Resolve activity id từ template id (inva → invasion, tg → trials/gauntlet)
+            const activityId = resolveActivityForTemplate(BH.activeAuto);
+
             ensureMainScreen(function (ok) {
                 if (!ok) {
                     BH.navigationPending = false;
@@ -199,18 +225,18 @@
                     return;
                 }
 
-                BH.navigateToActivity(BH.activeAuto, function (success) {
+                BH.navigateToActivity(activityId, function (success) {
                     BH.navigationPending = false;
 
                     if (!success) {
-                        BH.setMsg('⚠ Không vào được ' + BH.activeAuto);
+                        BH.setMsg('⚠ Không vào được ' + activityId);
                         return;
                     }
 
-                    const map = BH.ACTIVITY_MAP[BH.activeAuto];
+                    const map = BH.ACTIVITY_MAP[activityId];
                     if (map && map.clicks && map.clicks.length > 0) {
                         BH.doClickSequence(map.clicks, function () {
-                            BH.setMsg('✓ Đã vào ' + BH.activeAuto);
+                            BH.setMsg('✓ Đã vào ' + activityId);
                         });
                     }
                 });
