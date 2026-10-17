@@ -16,6 +16,10 @@
     BH.currentScreen = null;
     BH.navigationPending = false;
 
+    // Flag: đã navigate cho activity hiện tại chưa
+    BH._navigatedForActivity = false;
+
+    // All Content
     BH.allContentQueue = [];
     BH.allContentIndex = 0;
     BH.allContentRunning = false;
@@ -39,6 +43,7 @@
         BH._activityOutOfTickets = false;
         BH._outOfTicketsHandling = false;
         BH._flowReturnHomeClicked = false;
+        BH._navigatedForActivity = false;
 
         if (BH.clearPendingClick) BH.clearPendingClick();
     }
@@ -117,7 +122,6 @@
         if (!BH.activeAuto) return;
         if (BH.isSetupLock) return;
         if (BH.screensSetupMode) return;
-
         if (BH.clickCooldownUntil && BH.rt.now() < BH.clickCooldownUntil) return;
 
         if (BH.activeAuto === 'all') {
@@ -150,12 +154,13 @@
 
         if (BH._activityOutOfTickets) return;
 
-        // Navigate
-        if (BH.screens && Object.keys(BH.screens).length > 0 && !BH.navigationPending) {
+        // Navigate 1 lần duy nhất khi bắt đầu
+        if (!BH._navigatedForActivity && BH.screens && Object.keys(BH.screens).length > 0) {
             const screen = BH.detectScreen();
             BH.currentScreen = screen;
 
-            if (screen === 'main' && BH.activeAuto && BH.ACTIVITY_MAP[BH.activeAuto]) {
+            if (screen === 'main' && BH.ACTIVITY_MAP[BH.activeAuto]) {
+                BH._navigatedForActivity = true;
                 BH.navigationPending = true;
 
                 BH.navigateToActivity(BH.activeAuto, function (success) {
@@ -446,11 +451,7 @@
         BH.allCurrentActivity = null;
         BH.allState = 'navigate';
         BH.navigationPending = false;
-        BH._mainDetectedAt = 0;
-        BH._extraClicksRunning = false;
-        BH._activityOutOfTickets = false;
-        BH._outOfTicketsHandling = false;
-        BH._flowReturnHomeClicked = false;
+        BH._navigatedForActivity = false;
 
         if (BH.checkTimerId !== null) {
             BH.rt.clearInterval(BH.checkTimerId);
