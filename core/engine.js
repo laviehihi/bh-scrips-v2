@@ -17,19 +17,17 @@
     BH.lastActionTime = 0;
 
     BH.checkTimerId = null;
-    BH.autoStopTimerId = null;
-
-    BH.AUTO_STOP_TIMEOUT = 3 * 60 * 1000;
 
     BH.currentScreen = null;
     BH.navigationPending = false;
 
-    // All Content state
+    // All Content
     BH.allContentQueue = [];
     BH.allContentIndex = 0;
     BH.allContentRunning = false;
     BH.allCurrentActivity = null;
-    BH.allState = 'navigate';  // 'navigate' | 'extra_clicks' | 'flow' | 'next'
+    BH.allState = 'navigate';
+    BH._mainDetectedAt = 0;
 
     // =========================================================
     // RESET RUNTIME STATE
@@ -41,6 +39,7 @@
         BH.clickCooldownUntil = 0;
         BH.keypressSent = {};
         BH.waitStepDone = {};
+        BH._mainDetectedAt = 0;
 
         if (BH.clearPendingClick) {
             BH.clearPendingClick();
@@ -120,17 +119,14 @@
             return;
         }
 
-        // All Content mode
         if (BH.activeAuto === 'all') {
             runAllContentTick();
             return;
         }
 
-        // Single template
         const template = BH.getTemplate(BH.activeAuto);
         if (!template) return;
 
-        // Check popup
         if (BH.detectPopup && !BH.navigationPending) {
             const popup = BH.detectPopup();
 
@@ -156,7 +152,6 @@
             }
         }
 
-        // Check screen — navigate nếu ở màn chính
         if (BH.screens && Object.keys(BH.screens).length > 0 && !BH.navigationPending) {
             const screen = BH.detectScreen();
             BH.currentScreen = screen;
@@ -172,7 +167,6 @@
                         return;
                     }
 
-                    // Extra clicks nếu cần
                     const map = BH.ACTIVITY_MAP[BH.activeAuto];
                     if (map && map.clicks && map.clicks.length > 0) {
                         BH.doSequentialClicks(map.clicks, function () {
@@ -185,7 +179,6 @@
             }
         }
 
-        // Chạy flow
         const flowHandler = BH.FLOW_TYPES[template.flow.type];
         if (!flowHandler) {
             BH.setMsg('Flow type không hỗ trợ: ' + template.flow.type);
@@ -240,13 +233,13 @@
         BH.allContentRunning = true;
         BH.allCurrentActivity = queue[0];
         BH.allState = 'navigate';
+        BH._mainDetectedAt = 0;
 
         BH.activeAuto = 'all';
         BH.lastActionTime = BH.rt.now();
 
         resetRuntimeState();
 
-        BH.autoStopTimerId = BH.rt.setInterval(BH.checkAutoStop, 5000);
         BH.checkTimerId = BH.rt.setInterval(BH.doCheck, SCAN_INTERVAL);
 
         BH.overlayState = 'compact';
@@ -259,7 +252,6 @@
     function runAllContentTick() {
         if (!BH.allContentRunning) return;
 
-        // Popup check
         if (BH.detectPopup && !BH.navigationPending) {
             const popup = BH.detectPopup();
 
@@ -296,7 +288,7 @@
             return;
         }
 
-        // ===== STATE: navigate =====
+        // ===== NAVIGATE =====
         if (BH.allState === 'navigate') {
             const screen = BH.detectScreen();
             BH.currentScreen = screen;
@@ -337,7 +329,7 @@
             return;
         }
 
-        // ===== STATE: extra_clicks =====
+        // ===== EXTRA CLICKS =====
         if (BH.allState === 'extra_clicks') {
             const map = BH.ACTIVITY_MAP[currentActivity];
             if (!map || !map.clicks) {
@@ -360,7 +352,7 @@
             return;
         }
 
-        // ===== STATE: flow =====
+        // ===== FLOW =====
         if (BH.allState === 'flow') {
             const template = BH.getTemplate(currentActivity);
             if (!template) {
@@ -383,15 +375,21 @@
                 stepHandler.action(step, clickDelay);
             });
 
-            // Nếu về màn chính → next
-            const screen = BH.detectScreen();
-            if (screen === 'main') {
-                BH.allState = 'next';
+            // Chỉ next khi ở màn chính liên tục 3s
+            if (BH.detectScreen() === 'main') {
+                if (!BH._mainDetectedAt) {
+                    BH._mainDetectedAt = BH.rt.now();
+                } else if (BH.rt.now() - BH._mainDetectedAt > 3000) {
+                    BH._mainDetectedAt = 0;
+                    BH.allState = 'next';
+                }
+            } else {
+                BH._mainDetectedAt = 0;
             }
             return;
         }
 
-        // ===== STATE: next =====
+        // ===== NEXT =====
         if (BH.allState === 'next') {
             BH.allContentIndex++;
 
@@ -403,27 +401,13 @@
 
             BH.allCurrentActivity = BH.allContentQueue[BH.allContentIndex];
             BH.allState = 'navigate';
+            BH._mainDetectedAt = 0;
             BH.lastActionTime = BH.rt.now();
             BH.setMsg('→ ' + BH.allCurrentActivity);
+            if (BH.render) BH.render();
             return;
         }
     }
-
-    // =========================================================
-    // AUTO-STOP
-    // =========================================================
-
-    BH.checkAutoStop = function () {
-        if (!BH.activeAuto) return;
-
-        const elapsed = BH.rt.now() - BH.lastActionTime;
-
-        if (elapsed >= BH.AUTO_STOP_TIMEOUT) {
-            const stopped = BH.activeAuto;
-            BH.stopAuto();
-            BH.setMsg('⚠ ' + stopped.toUpperCase() + ' auto-stop (3 phút không click)');
-        }
-    };
 
     // =========================================================
     // START / STOP
@@ -454,7 +438,6 @@
         BH.activeTemplateId = templateId;
         BH.lastActionTime = BH.rt.now();
 
-        BH.autoStopTimerId = BH.rt.setInterval(BH.checkAutoStop, 5000);
         BH.checkTimerId = BH.rt.setInterval(BH.doCheck, SCAN_INTERVAL);
 
         BH.doCheck();
@@ -481,15 +464,11 @@
         BH.allCurrentActivity = null;
         BH.allState = 'navigate';
         BH.navigationPending = false;
+        BH._mainDetectedAt = 0;
 
         if (BH.checkTimerId !== null) {
             BH.rt.clearInterval(BH.checkTimerId);
             BH.checkTimerId = null;
-        }
-
-        if (BH.autoStopTimerId !== null) {
-            BH.rt.clearInterval(BH.autoStopTimerId);
-            BH.autoStopTimerId = null;
         }
 
         resetRuntimeState();
