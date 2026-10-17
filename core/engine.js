@@ -15,11 +15,8 @@
     BH.checkTimerId = null;
     BH.currentScreen = null;
     BH.navigationPending = false;
-
-    // Flag: đã navigate cho activity hiện tại chưa
     BH._navigatedForActivity = false;
 
-    // All Content
     BH.allContentQueue = [];
     BH.allContentIndex = 0;
     BH.allContentRunning = false;
@@ -30,6 +27,7 @@
     BH._activityOutOfTickets = false;
     BH._outOfTicketsHandling = false;
     BH._flowReturnHomeClicked = false;
+    BH._navigatingBack = false;
 
     // RESET
     function resetRuntimeState() {
@@ -44,6 +42,7 @@
         BH._outOfTicketsHandling = false;
         BH._flowReturnHomeClicked = false;
         BH._navigatedForActivity = false;
+        BH._navigatingBack = false;
 
         if (BH.clearPendingClick) BH.clearPendingClick();
     }
@@ -117,6 +116,45 @@
         });
     }
 
+    // ENSURE MAIN SCREEN
+    function ensureMainScreen(callback) {
+        if (BH.isMainScreen()) {
+            if (callback) callback(true);
+            return;
+        }
+
+        BH.setMsg('Đang về màn chính...');
+
+        let escCount = 0;
+        const maxEsc = 5;
+
+        function step() {
+            if (escCount >= maxEsc) {
+                if (callback) callback(false, 'Không về được màn chính');
+                return;
+            }
+
+            if (BH.isMainScreen()) {
+                if (callback) callback(true);
+                return;
+            }
+
+            escCount++;
+            BH.dispatchKeyPress('Escape');
+
+            BH.rt.setTimeout(function () {
+                if (BH.matchRegion('popup_leave')) {
+                    if (BH.getScreenRegion('popup_leave_yes')) {
+                        BH.clickRegion('popup_leave_yes');
+                    }
+                }
+                step();
+            }, 1500);
+        }
+
+        step();
+    }
+
     // DO CHECK
     BH.doCheck = function () {
         if (!BH.activeAuto) return;
@@ -132,7 +170,7 @@
         const template = BH.getTemplate(BH.activeAuto);
         if (!template) return;
 
-        // Popup
+        // Popup: chỉ outOfTickets và leave, bỏ confirm
         if (BH.detectPopup && !BH.navigationPending && !BH._outOfTicketsHandling) {
             const popup = BH.detectPopup();
 
@@ -145,23 +183,21 @@
                 if (BH.getScreenRegion('popup_leave_yes')) BH.clickRegion('popup_leave_yes');
                 return;
             }
-
-            if (popup === 'confirm') {
-                if (BH.matchRegion('popup_confirm')) BH.clickRegion('popup_confirm');
-                return;
-            }
         }
 
         if (BH._activityOutOfTickets) return;
 
-        // Navigate 1 lần duy nhất khi bắt đầu
+        // Navigate 1 lần duy nhất
         if (!BH._navigatedForActivity && BH.screens && Object.keys(BH.screens).length > 0) {
-            const screen = BH.detectScreen();
-            BH.currentScreen = screen;
+            BH._navigatedForActivity = true;
+            BH.navigationPending = true;
 
-            if (screen === 'main' && BH.ACTIVITY_MAP[BH.activeAuto]) {
-                BH._navigatedForActivity = true;
-                BH.navigationPending = true;
+            ensureMainScreen(function (ok) {
+                if (!ok) {
+                    BH.navigationPending = false;
+                    BH.setMsg('⚠ Không về được màn chính');
+                    return;
+                }
 
                 BH.navigateToActivity(BH.activeAuto, function (success) {
                     BH.navigationPending = false;
@@ -178,9 +214,9 @@
                         });
                     }
                 });
+            });
 
-                return;
-            }
+            return;
         }
 
         // Flow
@@ -239,6 +275,7 @@
         BH._activityOutOfTickets = false;
         BH._outOfTicketsHandling = false;
         BH._flowReturnHomeClicked = false;
+        BH._navigatingBack = false;
 
         BH.activeAuto = 'all';
         BH.lastActionTime = BH.rt.now();
@@ -257,7 +294,7 @@
     function runAllContentTick() {
         if (!BH.allContentRunning) return;
 
-        // Popup
+        // Popup: chỉ outOfTickets và leave
         if (BH.detectPopup && !BH.navigationPending && !BH._outOfTicketsHandling) {
             const popup = BH.detectPopup();
 
@@ -269,11 +306,6 @@
 
             if (popup === 'leave') {
                 if (BH.getScreenRegion('popup_leave_yes')) BH.clickRegion('popup_leave_yes');
-                return;
-            }
-
-            if (popup === 'confirm') {
-                if (BH.matchRegion('popup_confirm')) BH.clickRegion('popup_confirm');
                 return;
             }
         }
@@ -310,7 +342,6 @@
                     BH.allCurrentActivity = currentActivity;
                     if (BH.render) BH.render();
 
-                    // Reset Inva state
                     if (currentActivity === 'invasion') {
                         BH.invaAutoCheckedAt = 0;
                         BH.invaEscSent = false;
@@ -326,6 +357,16 @@
                 return;
             }
 
+            // Không phải main → ESC về
+            if (!BH._navigatingBack) {
+                BH._navigatingBack = true;
+                ensureMainScreen(function (ok) {
+                    BH._navigatingBack = false;
+                    if (!ok) {
+                        BH.allState = 'next';
+                    }
+                });
+            }
             return;
         }
 
@@ -407,6 +448,7 @@
             BH._activityOutOfTickets = false;
             BH._outOfTicketsHandling = false;
             BH._flowReturnHomeClicked = false;
+            BH._navigatingBack = false;
             BH.lastActionTime = BH.rt.now();
             BH.setMsg('→ ' + BH.allContentQueue[BH.allContentIndex]);
             if (BH.render) BH.render();
@@ -452,6 +494,7 @@
         BH.allState = 'navigate';
         BH.navigationPending = false;
         BH._navigatedForActivity = false;
+        BH._navigatingBack = false;
 
         if (BH.checkTimerId !== null) {
             BH.rt.clearInterval(BH.checkTimerId);
