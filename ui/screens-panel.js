@@ -230,6 +230,7 @@
 
     function renderCheckMode(el, scale) {
         el.style.width = 'auto';
+        el.style.maxWidth = (280 * scale) + 'px';
         el.style.padding = (6 * scale) + 'px ' + (10 * scale) + 'px';
         el.style.borderColor = '#8ec8ff';
 
@@ -238,29 +239,38 @@
         const def = BH.SCREEN_DEFS[BH.screensSetupIndex];
         if (!def) return;
 
+        // Rút gọn tên: bỏ "Icon "/"Text " ở đầu
+        let shortName = def.label || def.id;
+        shortName = shortName.replace(/^(Icon|Text)\s+/i, '');
+
         const row = document.createElement('div');
         Object.assign(row.style, {
             display: 'flex',
             alignItems: 'center',
-            gap: (8 * scale) + 'px',
+            gap: (6 * scale) + 'px',
             whiteSpace: 'nowrap'
         });
 
         const nameSpan = document.createElement('span');
-        nameSpan.textContent = def.label;
+        nameSpan.textContent = shortName;
         nameSpan.style.color = '#8ec8ff';
         nameSpan.style.fontWeight = '700';
         nameSpan.style.fontSize = (11 * scale) + 'px';
+        nameSpan.style.overflow = 'hidden';
+        nameSpan.style.textOverflow = 'ellipsis';
+        nameSpan.style.maxWidth = (110 * scale) + 'px';
+        nameSpan.title = def.label;
         row.appendChild(nameSpan);
 
         const ratioSpan = document.createElement('span');
         ratioSpan.setAttribute('data-bh-check-ratio', '1');
         ratioSpan.textContent = '...';
         ratioSpan.style.fontWeight = '700';
-        ratioSpan.style.fontSize = (12 * scale) + 'px';
+        ratioSpan.style.fontSize = (13 * scale) + 'px';
         ratioSpan.style.color = '#ffaa33';
-        ratioSpan.style.minWidth = (48 * scale) + 'px';
+        ratioSpan.style.minWidth = (52 * scale) + 'px';
         ratioSpan.style.textAlign = 'right';
+        ratioSpan.style.flex = 'none';
         row.appendChild(ratioSpan);
 
         row.appendChild(makeLocalBtn('■', function () {
@@ -269,7 +279,8 @@
             padding: '2px 8px',
             fontSize: '12px',
             color: '#ff6666',
-            border: '1px solid #ff6666'
+            border: '1px solid #ff6666',
+            flex: 'none'
         }));
 
         el.appendChild(row);

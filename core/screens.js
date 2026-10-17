@@ -38,24 +38,24 @@
         { id: 'raid_click2', group: 'Raid', label: 'Raid Click 2', hint: 'Nút click thứ 2 (hiện sau click 1)' },
         { id: 'raid_click3', group: 'Raid', label: 'Raid Click 3', hint: 'Nút click thứ 3 (hiện sau click 2)' },
 
-        // ===== Invasion (xoay tua) — chỉ lưu vị trí =====
-        { id: 'icon_invasion', group: 'Invasion', type: 'position', label: 'Icon Invasion', hint: 'Kéo vùng quanh icon Invasion (chỉ lưu vị trí)' },
+        // ===== Invasion (xoay tua) — chụp ảnh + lưu vị trí =====
+        { id: 'icon_invasion', group: 'Invasion', type: 'position', label: 'Icon Invasion', hint: 'Kéo vùng quanh icon Invasion (click theo vị trí)' },
         { id: 'text_invasion', group: 'Invasion', label: 'Text Invasion', hint: 'Chữ "Invasion" khi vào màn' },
 
-        // ===== Expedition (xoay tua) — chỉ lưu vị trí =====
-        { id: 'icon_expedition', group: 'Expedition', type: 'position', label: 'Icon Expedition', hint: 'Kéo vùng quanh icon Expedition (chỉ lưu vị trí)' },
+        // ===== Expedition (xoay tua) =====
+        { id: 'icon_expedition', group: 'Expedition', type: 'position', label: 'Icon Expedition', hint: 'Kéo vùng quanh icon Expedition (click theo vị trí)' },
         { id: 'text_expedition', group: 'Expedition', label: 'Text Expedition', hint: 'Chữ "Expedition" khi vào màn' },
 
-        // ===== GvP (xoay tua) — chỉ lưu vị trí =====
-        { id: 'icon_gvp', group: 'GvP', type: 'position', label: 'Icon GvP', hint: 'Kéo vùng quanh icon GvP (chỉ lưu vị trí)' },
+        // ===== GvP (xoay tua) =====
+        { id: 'icon_gvp', group: 'GvP', type: 'position', label: 'Icon GvP', hint: 'Kéo vùng quanh icon GvP (click theo vị trí)' },
         { id: 'text_gvp', group: 'GvP', label: 'Text GvP', hint: 'Chữ "GvP" khi vào màn' },
 
-        // ===== Trials (xoay tua) — chỉ lưu vị trí =====
-        { id: 'icon_trials', group: 'Trials', type: 'position', label: 'Icon Trials', hint: 'Kéo vùng quanh icon Trials (chỉ lưu vị trí)' },
+        // ===== Trials (xoay tua) =====
+        { id: 'icon_trials', group: 'Trials', type: 'position', label: 'Icon Trials', hint: 'Kéo vùng quanh icon Trials (click theo vị trí)' },
         { id: 'text_trials', group: 'Trials', label: 'Text Trials', hint: 'Chữ "Trials" khi vào màn' },
 
-        // ===== Gauntlet (xoay tua) — chỉ lưu vị trí =====
-        { id: 'icon_gauntlet', group: 'Gauntlet', type: 'position', label: 'Icon Gauntlet', hint: 'Kéo vùng quanh icon Gauntlet (chỉ lưu vị trí)' },
+        // ===== Gauntlet (xoay tua) =====
+        { id: 'icon_gauntlet', group: 'Gauntlet', type: 'position', label: 'Icon Gauntlet', hint: 'Kéo vùng quanh icon Gauntlet (click theo vị trí)' },
         { id: 'text_gauntlet', group: 'Gauntlet', label: 'Text Gauntlet', hint: 'Chữ "Gauntlet" khi vào màn' },
 
         // ===== Popups =====
@@ -167,7 +167,7 @@
     // SAVE / GET / REMOVE
     // =========================================================
 
-    BH.saveScreenRegion = function (regionId, bufX, bufY, width, height) {
+    BH.saveScreenRegion = function (regionId, bufX, bufY, width, height, isPosition) {
         const pixels = BH.captureRegion(bufX, bufY, width, height);
         if (!pixels) return false;
 
@@ -181,19 +181,9 @@
             minMatch: 0.85
         };
 
-        BH.saveScreens();
-        return true;
-    };
-
-    // Chỉ lưu vị trí (cho icon xoay tua)
-    BH.saveScreenPosition = function (regionId, bufX, bufY, width, height) {
-        BH.screens[regionId] = {
-            bufX: bufX,
-            bufY: bufY,
-            width: width,
-            height: height,
-            isPosition: true
-        };
+        if (isPosition) {
+            BH.screens[regionId].isPosition = true;
+        }
 
         BH.saveScreens();
         return true;
@@ -215,9 +205,7 @@
     BH.checkRegion = function (regionId) {
         const region = BH.screens[regionId];
         if (!region) return 0;
-
-        // Region chỉ lưu vị trí → không match ảnh
-        if (region.isPosition || !region.data) return 0;
+        if (!region.data) return 0;
 
         const current = BH.captureRegion(region.bufX, region.bufY, region.width, region.height);
         if (!current) return 0;
@@ -230,8 +218,9 @@
         const region = BH.screens[regionId];
         if (!region) return false;
 
-        // Region chỉ lưu vị trí → không match ảnh
-        if (region.isPosition || !region.data) return false;
+        // Region position: không dùng để detect screen (tránh ảnh hưởng isMainScreen/detectScreen)
+        if (region.isPosition) return false;
+        if (!region.data) return false;
 
         const ratio = BH.checkRegion(regionId);
         return ratio >= region.minMatch;

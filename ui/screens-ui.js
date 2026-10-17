@@ -185,13 +185,18 @@
             const region = BH.getScreenRegion(def.id);
 
             if (region) {
-                // Flash click ảo tại tâm region
-                const canvas = BH.getCanvas();
-                if (canvas && BH.showClickFlash) {
-                    const cx = region.bufX + Math.floor(region.width / 2);
-                    const cy = region.bufY + Math.floor(region.height / 2);
-                    const pos = BH.bufferToClient(canvas, cx, cy);
-                    BH.showClickFlash(pos.clientX, pos.clientY);
+                const ratio = region.data ? BH.checkRegion(def.id) : 0;
+                const passed = region.data ? (ratio >= (region.minMatch || 0.85)) : false;
+
+                // Chỉ flash click ảo khi PASS
+                if (passed) {
+                    const canvas = BH.getCanvas();
+                    if (canvas && BH.showClickFlash) {
+                        const cx = region.bufX + Math.floor(region.width / 2);
+                        const cy = region.bufY + Math.floor(region.height / 2);
+                        const pos = BH.bufferToClient(canvas, cx, cy);
+                        BH.showClickFlash(pos.clientX, pos.clientY);
+                    }
                 }
 
                 // Cập nhật % trên overlay
@@ -208,9 +213,9 @@
         const el = BH.overlayEl.querySelector('[data-bh-check-ratio]');
         if (!el) return;
 
-        if (region.isPosition || !region.data) {
-            el.textContent = '📍 vị trí';
-            el.style.color = '#8ec8ff';
+        if (!region.data) {
+            el.textContent = '—';
+            el.style.color = '#888';
             return;
         }
 
@@ -261,7 +266,10 @@
     };
 
     // =========================================================
-    // SAVE — icon chỉ lưu vị trí, không chụp ảnh
+    // SAVE
+    // - Text/popup: chụp ảnh thường
+    // - Icon xoay tua (type position): chụp ảnh + đánh dấu isPosition
+    //   (vẫn có % ratio để check, nhưng navigate click theo vị trí)
     // =========================================================
 
     BH.saveScreensPending = function () {
@@ -270,15 +278,9 @@
         const def = BH.SCREEN_DEFS[BH.screensSetupIndex];
         const p = BH.screensSetupPending;
 
-        let ok;
+        const isPosition = def.type === 'position';
 
-        if (def.type === 'position') {
-            // Chỉ lưu vị trí
-            ok = BH.saveScreenPosition(def.id, p.bufX, p.bufY, p.width, p.height);
-        } else {
-            // Chụp ảnh (text, popup)
-            ok = BH.saveScreenRegion(def.id, p.bufX, p.bufY, p.width, p.height);
-        }
+        const ok = BH.saveScreenRegion(def.id, p.bufX, p.bufY, p.width, p.height, isPosition);
 
         BH.screensSetupPending = null;
         clearPendingRect();
