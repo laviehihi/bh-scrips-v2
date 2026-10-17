@@ -1,5 +1,5 @@
 // core/engine.js
-// Runtime engine — hỗ trợ screen detection, navigation, All Content.
+// Runtime engine
 
 (function (global) {
     'use strict';
@@ -8,16 +8,11 @@
 
     const SCAN_INTERVAL = 300;
 
-    // =========================================================
     // STATE
-    // =========================================================
-
     BH.activeAuto = null;
     BH.activeTemplateId = null;
     BH.lastActionTime = 0;
-
     BH.checkTimerId = null;
-
     BH.currentScreen = null;
     BH.navigationPending = false;
 
@@ -28,17 +23,11 @@
     BH.allState = 'navigate';
     BH._mainDetectedAt = 0;
     BH._extraClicksRunning = false;
-
     BH._activityOutOfTickets = false;
     BH._outOfTicketsHandling = false;
-
-    // Flag: flow đã click returnHome
     BH._flowReturnHomeClicked = false;
 
-    // =========================================================
-    // RESET RUNTIME STATE
-    // =========================================================
-
+    // RESET
     function resetRuntimeState() {
         BH.invaAutoCheckedAt = 0;
         BH.invaEscSent = false;
@@ -51,15 +40,10 @@
         BH._outOfTicketsHandling = false;
         BH._flowReturnHomeClicked = false;
 
-        if (BH.clearPendingClick) {
-            BH.clearPendingClick();
-        }
+        if (BH.clearPendingClick) BH.clearPendingClick();
     }
 
-    // =========================================================
     // LOAD CALIBRATION
-    // =========================================================
-
     BH.loadCalibration = function (templateId) {
         const template = BH.getTemplate(templateId);
         if (!template) return;
@@ -90,10 +74,7 @@
         }
     };
 
-    // =========================================================
     // IS TEMPLATE READY
-    // =========================================================
-
     BH.isTemplateReady = function (templateId) {
         const template = BH.getTemplate(templateId);
         if (!template) return false;
@@ -102,24 +83,17 @@
 
         for (let i = 0; i < template.steps.length; i++) {
             const step = template.steps[i];
-            if (step.required && step.calibrated) {
-                return true;
-            }
+            if (step.required && step.calibrated) return true;
         }
 
         for (let i = 0; i < template.steps.length; i++) {
-            if (template.steps[i].calibrated) {
-                return true;
-            }
+            if (template.steps[i].calibrated) return true;
         }
 
         return false;
     };
 
-    // =========================================================
-    // HANDLE OUT OF TICKETS
-    // =========================================================
-
+    // OUT OF TICKETS
     function startOutOfTicketsHandling() {
         if (BH._outOfTicketsHandling) return;
         BH._outOfTicketsHandling = true;
@@ -138,18 +112,13 @@
         });
     }
 
-    // =========================================================
     // DO CHECK
-    // =========================================================
-
     BH.doCheck = function () {
         if (!BH.activeAuto) return;
         if (BH.isSetupLock) return;
         if (BH.screensSetupMode) return;
 
-        if (BH.clickCooldownUntil && BH.rt.now() < BH.clickCooldownUntil) {
-            return;
-        }
+        if (BH.clickCooldownUntil && BH.rt.now() < BH.clickCooldownUntil) return;
 
         if (BH.activeAuto === 'all') {
             runAllContentTick();
@@ -159,6 +128,7 @@
         const template = BH.getTemplate(BH.activeAuto);
         if (!template) return;
 
+        // Popup
         if (BH.detectPopup && !BH.navigationPending && !BH._outOfTicketsHandling) {
             const popup = BH.detectPopup();
 
@@ -168,22 +138,19 @@
             }
 
             if (popup === 'leave') {
-                if (BH.getScreenRegion('popup_leave_yes')) {
-                    BH.clickRegion('popup_leave_yes');
-                }
+                if (BH.getScreenRegion('popup_leave_yes')) BH.clickRegion('popup_leave_yes');
                 return;
             }
 
             if (popup === 'confirm') {
-                if (BH.matchRegion('popup_confirm')) {
-                    BH.clickRegion('popup_confirm');
-                }
+                if (BH.matchRegion('popup_confirm')) BH.clickRegion('popup_confirm');
                 return;
             }
         }
 
         if (BH._activityOutOfTickets) return;
 
+        // Navigate
         if (BH.screens && Object.keys(BH.screens).length > 0 && !BH.navigationPending) {
             const screen = BH.detectScreen();
             BH.currentScreen = screen;
@@ -211,6 +178,7 @@
             }
         }
 
+        // Flow
         const flowHandler = BH.FLOW_TYPES[template.flow.type];
         if (!flowHandler) {
             BH.setMsg('Flow type không hỗ trợ: ' + template.flow.type);
@@ -223,15 +191,11 @@
         flowHandler(template, function (step) {
             const stepHandler = BH.STEP_TYPES[step.type || 'click'];
             if (!stepHandler) return;
-
             stepHandler.action(step, clickDelay);
         });
     };
 
-    // =========================================================
     // ALL CONTENT
-    // =========================================================
-
     BH.ALL_CONTENT_DEFAULT = [
         'dungeon',
         'pvp',
@@ -288,6 +252,7 @@
     function runAllContentTick() {
         if (!BH.allContentRunning) return;
 
+        // Popup
         if (BH.detectPopup && !BH.navigationPending && !BH._outOfTicketsHandling) {
             const popup = BH.detectPopup();
 
@@ -298,16 +263,12 @@
             }
 
             if (popup === 'leave') {
-                if (BH.getScreenRegion('popup_leave_yes')) {
-                    BH.clickRegion('popup_leave_yes');
-                }
+                if (BH.getScreenRegion('popup_leave_yes')) BH.clickRegion('popup_leave_yes');
                 return;
             }
 
             if (popup === 'confirm') {
-                if (BH.matchRegion('popup_confirm')) {
-                    BH.clickRegion('popup_confirm');
-                }
+                if (BH.matchRegion('popup_confirm')) BH.clickRegion('popup_confirm');
                 return;
             }
         }
@@ -323,7 +284,7 @@
             return;
         }
 
-        // ===== NAVIGATE =====
+        // NAVIGATE
         if (BH.allState === 'navigate') {
             const screen = BH.detectScreen();
             BH.currentScreen = screen;
@@ -344,6 +305,12 @@
                     BH.allCurrentActivity = currentActivity;
                     if (BH.render) BH.render();
 
+                    // Reset Inva state
+                    if (currentActivity === 'invasion') {
+                        BH.invaAutoCheckedAt = 0;
+                        BH.invaEscSent = false;
+                    }
+
                     const map = BH.ACTIVITY_MAP[currentActivity];
                     if (map && map.clicks && map.clicks.length > 0) {
                         BH.allState = 'extra_clicks';
@@ -357,7 +324,7 @@
             return;
         }
 
-        // ===== EXTRA CLICKS =====
+        // EXTRA CLICKS
         if (BH.allState === 'extra_clicks') {
             const map = BH.ACTIVITY_MAP[currentActivity];
             if (!map || !map.clicks) {
@@ -384,7 +351,7 @@
             return;
         }
 
-        // ===== FLOW =====
+        // FLOW
         if (BH.allState === 'flow') {
             const map = BH.ACTIVITY_MAP[currentActivity];
             const templateId = (map && map.templateId) ? map.templateId : currentActivity;
@@ -412,7 +379,6 @@
                 stepHandler.action(step, clickDelay);
             });
 
-            // Next khi click returnHome thành công
             if (BH._flowReturnHomeClicked) {
                 BH._flowReturnHomeClicked = false;
                 BH.allState = 'next';
@@ -420,7 +386,7 @@
             return;
         }
 
-        // ===== NEXT =====
+        // NEXT
         if (BH.allState === 'next') {
             BH.allContentIndex++;
 
@@ -443,29 +409,16 @@
         }
     }
 
-    // =========================================================
     // START / STOP
-    // =========================================================
-
     BH.startAuto = function (templateId) {
-        if (BH.activeAuto && BH.activeAuto !== templateId) {
-            BH.stopAuto();
-        }
-
-        if (BH.activeAuto === templateId) {
-            BH.stopAuto();
-            return;
-        }
+        if (BH.activeAuto && BH.activeAuto !== templateId) BH.stopAuto();
+        if (BH.activeAuto === templateId) { BH.stopAuto(); return; }
 
         const template = BH.getTemplate(templateId);
-        if (!template) {
-            BH.setMsg('Template không tồn tại: ' + templateId);
-            return;
-        }
+        if (!template) { BH.setMsg('Template không tồn tại: ' + templateId); return; }
 
         BH.loadCalibration(templateId);
         BH.loadScreens();
-
         resetRuntimeState();
 
         BH.activeAuto = templateId;
@@ -473,11 +426,9 @@
         BH.lastActionTime = BH.rt.now();
 
         BH.checkTimerId = BH.rt.setInterval(BH.doCheck, SCAN_INTERVAL);
-
         BH.doCheck();
 
         BH.overlayState = 'compact';
-
         BH.setMsg(template.name + ' started');
 
         if (BH.render) BH.render();
@@ -507,31 +458,21 @@
         }
 
         resetRuntimeState();
-
         BH.setMsg(stopped.toUpperCase() + ' stopped');
 
         if (BH.render) BH.render();
     };
 
     BH.toggleAuto = function (templateId) {
-        if (BH.activeAuto === templateId) {
-            BH.stopAuto();
-        } else {
-            BH.startAuto(templateId);
-        }
+        if (BH.activeAuto === templateId) BH.stopAuto();
+        else BH.startAuto(templateId);
     };
 
-    // =========================================================
-    // HOTKEY TOGGLE
-    // =========================================================
-
+    // HOTKEY
     BH.toggleByHotkey = function (key) {
         if (key === '8') {
-            if (BH.activeAuto === 'all') {
-                BH.stopAuto();
-            } else {
-                BH.startAllContent();
-            }
+            if (BH.activeAuto === 'all') BH.stopAuto();
+            else BH.startAllContent();
             return;
         }
 
@@ -544,14 +485,8 @@
         if (BH.setupMode) BH.exitSetupMode();
         if (BH.screensSetupMode) BH.exitScreensSetup();
 
-        if (BH.activeAuto === template.id) {
-            BH.stopAuto();
-            return;
-        }
-
-        if (BH.activeAuto) {
-            BH.stopAuto();
-        }
+        if (BH.activeAuto === template.id) { BH.stopAuto(); return; }
+        if (BH.activeAuto) BH.stopAuto();
 
         BH.activeTemplateId = template.id;
         BH.saveActiveTemplate(template.id);
@@ -559,9 +494,7 @@
         if (template.id === 'wb') {
             const opts = BH.loadTemplateOptions('wb');
             if (isTeam) {
-                if (!opts.partySize || opts.partySize === 1) {
-                    opts.partySize = 2;
-                }
+                if (!opts.partySize || opts.partySize === 1) opts.partySize = 2;
             } else {
                 opts.partySize = 1;
             }
@@ -577,22 +510,17 @@
         BH.startAuto(template.id);
     };
 
-    // =========================================================
     // SET CLICK DELAY
-    // =========================================================
-
     BH.setTemplateClickDelay = function (templateId, ms) {
         const options = BH.loadTemplateOptions(templateId);
         options.clickDelay = ms;
         BH.saveTemplateOptions(templateId, options);
-
         if (BH.render) BH.render();
     };
 
     BH.getTemplateClickDelay = function (templateId) {
         const template = BH.getTemplate(templateId);
         if (!template) return 500;
-
         const options = BH.loadTemplateOptions(templateId);
         return options.clickDelay || template.defaultClickDelay || 500;
     };

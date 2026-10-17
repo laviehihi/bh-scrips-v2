@@ -142,7 +142,7 @@
         },
 
         // =========================================================
-        // DUNGEON — auto rerun
+        // DUNGEON — chỉ rerun
         // =========================================================
 
         dungeon: {
@@ -152,14 +152,13 @@
             description: 'Auto Dungeon — rerun',
             defaultClickDelay: 500,
             steps: [
-                { id: 'rerun', label: 'Rerun', hint: 'Nút rerun sau trận', type: 'click', required: true },
-                { id: 'returnHome', label: 'Về thành', hint: 'Nút về thành (nếu hết)', type: 'click', required: false }
+                { id: 'rerun', label: 'Rerun', hint: 'Nút rerun sau trận', type: 'click', required: true }
             ],
-            flow: { type: 'sequential', order: ['rerun', 'returnHome'], loop: true }
+            flow: { type: 'sequential', order: ['rerun'], loop: true }
         },
 
         // =========================================================
-        // RAID — auto rerun
+        // RAID — chỉ rerun
         // =========================================================
 
         raid: {
@@ -169,10 +168,9 @@
             description: 'Auto Raid — rerun',
             defaultClickDelay: 500,
             steps: [
-                { id: 'rerun', label: 'Rerun', hint: 'Nút rerun sau trận', type: 'click', required: true },
-                { id: 'returnHome', label: 'Về thành', hint: 'Nút về thành (nếu hết)', type: 'click', required: false }
+                { id: 'rerun', label: 'Rerun', hint: 'Nút rerun sau trận', type: 'click', required: true }
             ],
-            flow: { type: 'sequential', order: ['rerun', 'returnHome'], loop: true }
+            flow: { type: 'sequential', order: ['rerun'], loop: true }
         },
 
         // =========================================================

@@ -7,14 +7,14 @@
     const BH = global.__BH__ = global.__BH__ || {};
 
     // =========================================================
-    // ACTIVITY MAP
+    // ACTIVITY MAP — Dungeon/Raid dùng template 'rerun'
     // =========================================================
 
     BH.ACTIVITY_MAP = {
-        dungeon: { templateId: 'dungeon', icon: 'icon_dungeon', text: 'text_dungeon', clicks: ['dungeon_click1', 'dungeon_click2', 'dungeon_click3'] },
+        dungeon: { templateId: 'rerun', icon: 'icon_dungeon', text: 'text_dungeon', clicks: ['dungeon_click1', 'dungeon_click2', 'dungeon_click3'] },
         pvp: { templateId: 'pvp', icon: 'icon_pvp', text: 'text_pvp', clicks: null },
         wb: { templateId: 'wb', icon: 'icon_wb', text: 'text_wb', clicks: ['wb_click1', 'wb_click2', 'wb_click3'] },
-        raid: { templateId: 'raid', icon: 'icon_raid', text: 'text_raid', clicks: ['raid_click1', 'raid_click2', 'raid_click3'] },
+        raid: { templateId: 'rerun', icon: 'icon_raid', text: 'text_raid', clicks: ['raid_click1', 'raid_click2', 'raid_click3'] },
         invasion: { templateId: 'inva', icon: 'icon_invasion', text: 'text_invasion', clicks: null },
         expedition: { templateId: 'expedition', icon: 'icon_expedition', text: 'text_expedition', clicks: null },
         gvp: { templateId: 'gvp', icon: 'icon_gvp', text: 'text_gvp', clicks: null },
@@ -52,7 +52,6 @@
 
         BH.setMsg('Click icon ' + activityId);
 
-        // Chờ 2s → callback(true) luôn, không check text
         BH.rt.setTimeout(function () {
             if (callback) callback(true);
         }, 2000);
