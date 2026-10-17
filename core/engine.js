@@ -27,6 +27,9 @@
     BH._activityOutOfTickets = false;
     BH._outOfTicketsHandling = false;
     BH._navigatingBack = false;
+    BH._navigateInFlight = false;
+    BH._navigateStartTime = 0;
+    BH._lastAllStateLog = '';
 
     // RESET
     function resetRuntimeState() {
@@ -41,6 +44,8 @@
         BH._outOfTicketsHandling = false;
         BH._navigatedForActivity = false;
         BH._navigatingBack = false;
+        BH._navigateInFlight = false;
+        BH._navigateStartTime = 0;
 
         if (BH.clearPendingClick) BH.clearPendingClick();
     }
@@ -63,6 +68,30 @@
     }
 
     BH.resolveActivityForTemplate = resolveActivityForTemplate;
+
+    // =========================================================
+    // LOG STATE TRANSITION
+    // =========================================================
+
+    function setAllState(newState, reason) {
+        if (BH.allState === newState) return;
+
+        const old = BH.allState;
+        BH.allState = newState;
+
+        const act = BH.allCurrentActivity || '?';
+        const idx = (BH.allContentIndex || 0) + 1;
+        const total = (BH.allContentQueue && BH.allContentQueue.length) || 0;
+
+        const logMsg = '[ALL] ' + idx + '/' + total + ' ' + act + ': ' + old + ' → ' + newState + (reason ? ' (' + reason + ')' : '');
+        console.log(logMsg);
+
+        BH._lastAllStateLog = logMsg;
+
+        if (newState === 'navigate') {
+            BH._navigateStartTime = BH.rt.now();
+        }
+    }
 
     // LOAD CALIBRATION
     BH.loadCalibration = function (templateId) {
@@ -125,7 +154,7 @@
 
             if (BH.activeAuto === 'all') {
                 if (success && BH.isMainScreen()) {
-                    BH.allState = 'next';
+                    setAllState('next', 'outOfTickets');
                     BH._activityOutOfTickets = false;
                 } else {
                     BH._activityOutOfTickets = false;
@@ -313,6 +342,8 @@
         BH._activityOutOfTickets = false;
         BH._outOfTicketsHandling = false;
         BH._navigatingBack = false;
+        BH._navigateInFlight = false;
+        BH._navigateStartTime = BH.rt.now();
 
         BH.activeAuto = 'all';
         BH.lastActionTime = BH.rt.now();
@@ -323,6 +354,7 @@
 
         BH.overlayState = 'compact';
 
+        console.log('[ALL] Start queue:', queue.join(' → '));
         BH.setMsg('All: ' + queue.join(' → '));
 
         if (BH.render) BH.render();
@@ -332,7 +364,7 @@
         if (!BH.allContentRunning) return;
 
         // Popup: outOfTickets và leave
-        if (BH.detectPopup && !BH.navigationPending && !BH._outOfTicketsHandling) {
+        if (BH.detectPopup && !BH._navigateInFlight && !BH._outOfTicketsHandling) {
             const popup = BH.detectPopup();
 
             if (popup === 'outOfTickets') {
@@ -347,7 +379,7 @@
             }
         }
 
-        if (BH.navigationPending) return;
+        if (BH._navigateInFlight) return;
         if (BH._outOfTicketsHandling) return;
         if (BH._activityOutOfTickets) return;
 
@@ -360,21 +392,29 @@
 
         // NAVIGATE
         if (BH.allState === 'navigate') {
+            // Timeout cứng: nếu ở navigate quá 30s → bỏ qua
+            if (BH._navigateStartTime && BH.rt.now() - BH._navigateStartTime > 30000) {
+                BH.setMsg('⚠ Navigate timeout ' + currentActivity);
+                console.log('[ALL] Navigate timeout:', currentActivity);
+                setAllState('next', 'navigate timeout');
+                return;
+            }
+
             if (BH.clearPendingClick) BH.clearPendingClick();
 
             const screen = BH.detectScreen();
             BH.currentScreen = screen;
 
             if (screen === 'main') {
-                BH.navigationPending = true;
+                BH._navigateInFlight = true;
                 BH.setMsg('→ ' + currentActivity);
 
                 BH.navigateToActivity(currentActivity, function (success) {
-                    BH.navigationPending = false;
+                    BH._navigateInFlight = false;
 
                     if (!success) {
                         BH.setMsg('⚠ Không vào được ' + currentActivity);
-                        BH.allState = 'next';
+                        setAllState('next', 'navigate fail');
                         return;
                     }
 
@@ -388,9 +428,9 @@
 
                     const map = BH.ACTIVITY_MAP[currentActivity];
                     if (map && map.clicks && map.clicks.length > 0) {
-                        BH.allState = 'extra_clicks';
+                        setAllState('extra_clicks', 'nav ok');
                     } else {
-                        BH.allState = 'flow';
+                        setAllState('flow', 'nav ok');
                     }
                 });
                 return;
@@ -401,7 +441,7 @@
                 ensureMainScreen(function (ok) {
                     BH._navigatingBack = false;
                     if (!ok) {
-                        BH.allState = 'next';
+                        setAllState('next', 'ensure main fail');
                     }
                 });
             }
@@ -412,7 +452,7 @@
         if (BH.allState === 'extra_clicks') {
             const map = BH.ACTIVITY_MAP[currentActivity];
             if (!map || !map.clicks) {
-                BH.allState = 'flow';
+                setAllState('flow', 'no clicks');
                 return;
             }
 
@@ -424,44 +464,65 @@
 
                 if (!success) {
                     BH.setMsg('⚠ Click fail ' + currentActivity);
-                    BH.allState = 'next';
+                    setAllState('next', 'clicks fail');
                     return;
                 }
 
                 BH.rt.setTimeout(function () {
-                    BH.allState = 'flow';
+                    if (BH.activeAuto === 'all') {
+                        setAllState('flow', 'clicks done');
+                    }
                 }, 2000);
             });
             return;
         }
 
-        // FLOW — loop liên tục cho đến khi hết vé (outOfTickets)
+        // FLOW — loop liên tục cho đến khi hết vé
         if (BH.allState === 'flow') {
+            // Clear pendingClick từ activity trước (phòng race)
+            if (BH.clearPendingClick) BH.clearPendingClick();
+
             const map = BH.ACTIVITY_MAP[currentActivity];
             const templateId = (map && map.templateId) ? map.templateId : currentActivity;
             const template = BH.getTemplate(templateId);
 
             if (!template) {
                 BH.setMsg('⚠ Không có template ' + templateId);
-                BH.allState = 'next';
+                setAllState('next', 'no template');
+                return;
+            }
+
+            // Check template calibrated
+            let anyCalibrated = false;
+            for (let i = 0; i < template.steps.length; i++) {
+                if (template.steps[i].calibrated) { anyCalibrated = true; break; }
+            }
+            if (!anyCalibrated) {
+                BH.setMsg('⚠ Template ' + templateId + ' chưa setup');
+                console.log('[ALL] Template not calibrated:', templateId);
+                setAllState('next', 'template not setup');
                 return;
             }
 
             const flowHandler = BH.FLOW_TYPES[template.flow.type];
             if (!flowHandler) {
                 BH.setMsg('⚠ Không có flow ' + template.flow.type);
-                BH.allState = 'next';
+                setAllState('next', 'no flow');
                 return;
             }
 
             const options = BH.loadTemplateOptions(templateId);
             const clickDelay = options.clickDelay || template.defaultClickDelay || 500;
 
-            flowHandler(template, function (step) {
+            const matched = flowHandler(template, function (step) {
                 const stepHandler = BH.STEP_TYPES[step.type || 'click'];
                 if (!stepHandler) return;
                 stepHandler.action(step, clickDelay);
             });
+
+            if (matched === false) {
+                BH.setMsg('⏳ ' + currentActivity + ': chờ nút');
+            }
 
             return;
         }
@@ -478,13 +539,16 @@
                 return;
             }
 
-            BH.allState = 'navigate';
             BH._mainDetectedAt = 0;
             BH._extraClicksRunning = false;
             BH._activityOutOfTickets = false;
             BH._outOfTicketsHandling = false;
             BH._navigatingBack = false;
+            BH._navigateInFlight = false;
             BH.lastActionTime = BH.rt.now();
+
+            setAllState('navigate', 'next');
+
             BH.setMsg('→ ' + BH.allContentQueue[BH.allContentIndex]);
             if (BH.render) BH.render();
             return;
@@ -530,6 +594,8 @@
         BH.navigationPending = false;
         BH._navigatedForActivity = false;
         BH._navigatingBack = false;
+        BH._navigateInFlight = false;
+        BH._navigateStartTime = 0;
 
         if (BH.checkTimerId !== null) {
             BH.rt.clearInterval(BH.checkTimerId);

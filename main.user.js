@@ -3,32 +3,32 @@
 // ==UserScript==
 // @name         Bit Heroes - Auto Bot v2
 // @namespace    http://tampermonkey.net/
-// @version      2.4.18
+// @version      2.4.19
 // @description  Auto bot cho Bit Heroes
 // @match        *://*.kongregate.com/*
 // @match        *://*.bitheroesgame.com/*
 // @run-at       document-start
 // @grant        none
-// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.4.18/core/real-time.js
-// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.4.18/core/utils.js
-// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.4.18/core/pixel.js
-// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.4.18/core/click.js
-// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.4.18/core/storage.js
-// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.4.18/core/speed-hack.js
-// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.4.18/core/screens.js
-// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.4.18/core/navigation.js
-// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.4.18/core/templates.js
-// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.4.18/core/step-types.js
-// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.4.18/core/flow-types.js
-// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.4.18/core/engine.js
-// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.4.18/ui/help.js
-// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.4.18/ui/marker.js
-// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.4.18/ui/magnifier.js
-// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.4.18/ui/setup.js
-// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.4.18/ui/screens-ui.js
-// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.4.18/ui/screens-panel.js
-// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.4.18/ui/overlay.js
-// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.4.18/ui/template-picker.js
+// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.4.19/core/real-time.js
+// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.4.19/core/utils.js
+// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.4.19/core/pixel.js
+// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.4.19/core/click.js
+// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.4.19/core/storage.js
+// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.4.19/core/speed-hack.js
+// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.4.19/core/screens.js
+// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.4.19/core/navigation.js
+// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.4.19/core/templates.js
+// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.4.19/core/step-types.js
+// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.4.19/core/flow-types.js
+// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.4.19/core/engine.js
+// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.4.19/ui/help.js
+// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.4.19/ui/marker.js
+// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.4.19/ui/magnifier.js
+// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.4.19/ui/setup.js
+// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.4.19/ui/screens-ui.js
+// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.4.19/ui/screens-panel.js
+// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.4.19/ui/overlay.js
+// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.4.19/ui/template-picker.js
 // ==/UserScript==
 
 (function () {
@@ -69,7 +69,7 @@
     };
 
     window.__BH__ = window.__BH__ || {};
-    window.__BH__.BOT_VERSION = '2.4.18';
+    window.__BH__.BOT_VERSION = '2.4.19';
 
     window.__BH__.togglePassthrough = function () {
         window.__BH__.passthrough = !window.__BH__.passthrough;
@@ -133,7 +133,7 @@
         window.__BH__.loadCalibration(window.__BH__.activeTemplateId);
         window.__BH__.render();
 
-        console.log('[BH Bot v2.4.18] Loaded');
+        console.log('[BH Bot v2.4.19] Loaded');
     }
 
     if (document.readyState === 'loading') {
