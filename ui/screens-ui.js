@@ -12,6 +12,9 @@
     BH.screensSetupPending = null;
     BH.screensSetupRect = null;
 
+    BH.screensCheckMode = false;
+    BH.screensCheckTimerId = null;
+
     // =========================================================
     // ENTER / EXIT
     // =========================================================
@@ -29,6 +32,12 @@
         BH.screensSetupCollapsed = false;
         BH.screensSetupPending = null;
 
+        BH.screensCheckMode = false;
+        if (BH.screensCheckTimerId !== null) {
+            BH.rt.clearTimeout(BH.screensCheckTimerId);
+            BH.screensCheckTimerId = null;
+        }
+
         BH.loadScreens();
 
         BH.setMsg('Setup Screens: ' + BH.SCREEN_DEFS[0].label);
@@ -43,6 +52,12 @@
         BH.screensSetupIndex = 0;
         BH.screensSetupCollapsed = false;
         BH.screensSetupPending = null;
+
+        BH.screensCheckMode = false;
+        if (BH.screensCheckTimerId !== null) {
+            BH.rt.clearTimeout(BH.screensCheckTimerId);
+            BH.screensCheckTimerId = null;
+        }
 
         if (BH.screensSetupRect) {
             BH.screensSetupRect.remove();
@@ -113,6 +128,101 @@
     };
 
     // =========================================================
+    // CHECK MODE — xem % match realtime + flash click ảo
+    // =========================================================
+
+    BH.startScreensCheck = function () {
+        if (!BH.screensSetupMode) return;
+
+        const def = BH.SCREEN_DEFS[BH.screensSetupIndex];
+        if (!def) return;
+
+        BH.screensCheckMode = true;
+        BH.screensSetupCollapsed = true;
+
+        // Tắt capture nếu đang bật
+        BH.screensCaptureActive = false;
+        BH.screensCaptureStart = null;
+        if (BH.screensSetupRect) {
+            BH.screensSetupRect.remove();
+            BH.screensSetupRect = null;
+        }
+
+        BH.render();
+        scheduleCheckTick();
+    };
+
+    BH.stopScreensCheck = function () {
+        if (!BH.screensCheckMode) return;
+
+        BH.screensCheckMode = false;
+        BH.screensSetupCollapsed = false;
+
+        if (BH.screensCheckTimerId !== null) {
+            BH.rt.clearTimeout(BH.screensCheckTimerId);
+            BH.screensCheckTimerId = null;
+        }
+
+        if (BH.hideMagnifier) BH.hideMagnifier();
+
+        BH.render();
+    };
+
+    function scheduleCheckTick() {
+        if (!BH.screensCheckMode) return;
+
+        if (BH.screensCheckTimerId !== null) {
+            BH.rt.clearTimeout(BH.screensCheckTimerId);
+            BH.screensCheckTimerId = null;
+        }
+
+        BH.screensCheckTimerId = BH.rt.setTimeout(function () {
+            if (!BH.screensCheckMode) return;
+
+            const def = BH.SCREEN_DEFS[BH.screensSetupIndex];
+            if (!def) return;
+
+            const region = BH.getScreenRegion(def.id);
+
+            if (region) {
+                // Flash click ảo tại tâm region
+                const canvas = BH.getCanvas();
+                if (canvas && BH.showClickFlash) {
+                    const cx = region.bufX + Math.floor(region.width / 2);
+                    const cy = region.bufY + Math.floor(region.height / 2);
+                    const pos = BH.bufferToClient(canvas, cx, cy);
+                    BH.showClickFlash(pos.clientX, pos.clientY);
+                }
+
+                // Cập nhật % trên overlay
+                updateCheckOverlay(def, region);
+            }
+
+            scheduleCheckTick();
+        }, 400);
+    }
+
+    function updateCheckOverlay(def, region) {
+        if (!BH.overlayEl) return;
+
+        const el = BH.overlayEl.querySelector('[data-bh-check-ratio]');
+        if (!el) return;
+
+        if (region.isPosition || !region.data) {
+            el.textContent = '📍 vị trí';
+            el.style.color = '#8ec8ff';
+            return;
+        }
+
+        const ratio = BH.checkRegion(def.id);
+        const pct = Math.round(ratio * 100);
+        const passed = ratio >= (region.minMatch || 0.85);
+
+        el.textContent = pct + '%';
+        el.style.color = passed ? '#70e0a8' : '#ff9966';
+    }
+
+    // =========================================================
     // FINISH CAPTURE
     // =========================================================
 
@@ -164,15 +274,7 @@
 
         if (def.type === 'position') {
             // Chỉ lưu vị trí
-            BH.screens[def.id] = {
-                bufX: p.bufX,
-                bufY: p.bufY,
-                width: p.width,
-                height: p.height,
-                isPosition: true
-            };
-            BH.saveScreens();
-            ok = true;
+            ok = BH.saveScreenPosition(def.id, p.bufX, p.bufY, p.width, p.height);
         } else {
             // Chụp ảnh (text, popup)
             ok = BH.saveScreenRegion(def.id, p.bufX, p.bufY, p.width, p.height);

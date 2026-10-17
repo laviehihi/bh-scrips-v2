@@ -7,6 +7,12 @@
     const BH = global.__BH__ = global.__BH__ || {};
 
     BH.renderScreensPanel = function (el, scale) {
+        // Check mode: hiển thị % ratio + nút tắt
+        if (BH.screensCheckMode) {
+            renderCheckMode(el, scale);
+            return;
+        }
+
         if (BH.screensSetupCollapsed) {
             renderCollapsed(el, scale);
             return;
@@ -138,6 +144,15 @@
             }));
 
             if (existing) {
+                row.appendChild(makeLocalBtn('[Check]', function () {
+                    BH.startScreensCheck();
+                }, {
+                    bg: 'rgba(112,224,168,0.2)',
+                    color: '#70e0a8',
+                    border: '1px solid #70e0a8',
+                    flex: '1'
+                }));
+
                 row.appendChild(makeLocalBtn('[Xoá]', function () {
                     BH.removeScreenRegion(def.id);
                     BH.setMsg('Đã xoá ' + def.label);
@@ -208,6 +223,61 @@
 
         el.appendChild(progressRow);
     };
+
+    // =========================================================
+    // CHECK MODE RENDER
+    // =========================================================
+
+    function renderCheckMode(el, scale) {
+        el.style.width = 'auto';
+        el.style.padding = (6 * scale) + 'px ' + (10 * scale) + 'px';
+        el.style.borderColor = '#8ec8ff';
+
+        el.innerHTML = '';
+
+        const def = BH.SCREEN_DEFS[BH.screensSetupIndex];
+        if (!def) return;
+
+        const row = document.createElement('div');
+        Object.assign(row.style, {
+            display: 'flex',
+            alignItems: 'center',
+            gap: (8 * scale) + 'px',
+            whiteSpace: 'nowrap'
+        });
+
+        const nameSpan = document.createElement('span');
+        nameSpan.textContent = def.label;
+        nameSpan.style.color = '#8ec8ff';
+        nameSpan.style.fontWeight = '700';
+        nameSpan.style.fontSize = (11 * scale) + 'px';
+        row.appendChild(nameSpan);
+
+        const ratioSpan = document.createElement('span');
+        ratioSpan.setAttribute('data-bh-check-ratio', '1');
+        ratioSpan.textContent = '...';
+        ratioSpan.style.fontWeight = '700';
+        ratioSpan.style.fontSize = (12 * scale) + 'px';
+        ratioSpan.style.color = '#ffaa33';
+        ratioSpan.style.minWidth = (48 * scale) + 'px';
+        ratioSpan.style.textAlign = 'right';
+        row.appendChild(ratioSpan);
+
+        row.appendChild(makeLocalBtn('■', function () {
+            BH.stopScreensCheck();
+        }, {
+            padding: '2px 8px',
+            fontSize: '12px',
+            color: '#ff6666',
+            border: '1px solid #ff6666'
+        }));
+
+        el.appendChild(row);
+    }
+
+    // =========================================================
+    // COLLAPSED RENDER
+    // =========================================================
 
     function renderCollapsed(el, scale) {
         el.style.width = 'auto';
