@@ -75,15 +75,22 @@
                 },
                 {
                     id: 'returnHome',
-                    label: 'Về thành',
-                    hint: 'Nút về thành sau trận',
+                    label: 'Về thành (thắng)',
+                    hint: 'Nút về thành khi thắng',
                     type: 'click',
                     required: true
+                },
+                {
+                    id: 'returnHomeLose',
+                    label: 'Về thành (thua)',
+                    hint: 'Nút về thành khi thua (nếu khác vị trí/màu)',
+                    type: 'click',
+                    required: false
                 }
             ],
             flow: {
                 type: 'sequential',
-                order: ['start', 'selectOpponent', 'confirmTeam', 'yesNo', 'returnHome'],
+                order: ['start', 'selectOpponent', 'confirmTeam', 'yesNo', 'returnHome', 'returnHomeLose'],
                 loop: true
             }
         },
@@ -364,7 +371,6 @@
         for (let i = 0; i < all.length; i++) {
             const t = all[i];
 
-            // WB có 2 hotkey
             if (t.hotkey === key) {
                 return { template: t, isTeam: false };
             }
