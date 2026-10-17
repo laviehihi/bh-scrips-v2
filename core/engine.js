@@ -28,6 +28,7 @@
     BH.allCurrentActivity = null;
     BH.allState = 'navigate';
     BH._mainDetectedAt = 0;
+    BH._extraClicksRunning = false;
 
     // =========================================================
     // RESET RUNTIME STATE
@@ -40,6 +41,7 @@
         BH.keypressSent = {};
         BH.waitStepDone = {};
         BH._mainDetectedAt = 0;
+        BH._extraClicksRunning = false;
 
         if (BH.clearPendingClick) {
             BH.clearPendingClick();
@@ -169,7 +171,7 @@
 
                     const map = BH.ACTIVITY_MAP[BH.activeAuto];
                     if (map && map.clicks && map.clicks.length > 0) {
-                        BH.doSequentialClicks(map.clicks, function () {
+                        BH.doClickSequence(map.clicks, function () {
                             BH.setMsg('✓ Đã vào ' + BH.activeAuto);
                         });
                     }
@@ -234,6 +236,7 @@
         BH.allCurrentActivity = queue[0];
         BH.allState = 'navigate';
         BH._mainDetectedAt = 0;
+        BH._extraClicksRunning = false;
 
         BH.activeAuto = 'all';
         BH.lastActionTime = BH.rt.now();
@@ -337,17 +340,21 @@
                 return;
             }
 
-            BH.allState = 'flow';
+            if (BH._extraClicksRunning) return;
+            BH._extraClicksRunning = true;
 
-            BH.doSequentialClicks(map.clicks, function (success) {
+            BH.doClickSequence(map.clicks, function (success) {
+                BH._extraClicksRunning = false;
+
                 if (!success) {
                     BH.setMsg('⚠ Click fail ' + currentActivity);
                     BH.allState = 'next';
-                } else {
-                    BH.rt.setTimeout(function () {
-                        BH.allState = 'flow';
-                    }, 2000);
+                    return;
                 }
+
+                BH.rt.setTimeout(function () {
+                    BH.allState = 'flow';
+                }, 2000);
             });
             return;
         }
@@ -375,11 +382,11 @@
                 stepHandler.action(step, clickDelay);
             });
 
-            // Chỉ next khi ở màn chính liên tục 3s
+            // Chỉ next khi ở màn chính liên tục 10s
             if (BH.detectScreen() === 'main') {
                 if (!BH._mainDetectedAt) {
                     BH._mainDetectedAt = BH.rt.now();
-                } else if (BH.rt.now() - BH._mainDetectedAt > 3000) {
+                } else if (BH.rt.now() - BH._mainDetectedAt > 10000) {
                     BH._mainDetectedAt = 0;
                     BH.allState = 'next';
                 }
@@ -402,6 +409,7 @@
             BH.allCurrentActivity = BH.allContentQueue[BH.allContentIndex];
             BH.allState = 'navigate';
             BH._mainDetectedAt = 0;
+            BH._extraClicksRunning = false;
             BH.lastActionTime = BH.rt.now();
             BH.setMsg('→ ' + BH.allCurrentActivity);
             if (BH.render) BH.render();
@@ -465,6 +473,7 @@
         BH.allState = 'navigate';
         BH.navigationPending = false;
         BH._mainDetectedAt = 0;
+        BH._extraClicksRunning = false;
 
         if (BH.checkTimerId !== null) {
             BH.rt.clearInterval(BH.checkTimerId);

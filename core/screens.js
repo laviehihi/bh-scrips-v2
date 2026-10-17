@@ -9,54 +9,60 @@
     const STORAGE_KEY = 'bh_v3_screens';
 
     // =========================================================
-    // SCREEN DEFINITIONS
+    // SCREEN DEFINITIONS — theo cặp (icon + text cùng activity)
     // =========================================================
 
     BH.SCREEN_DEFS = [
-        // ===== Icons hoạt động cố định =====
-        { id: 'icon_dungeon', group: 'Icons (cố định)', label: 'Icon Dungeon', hint: 'Icon Dungeon trên màn chính' },
-        { id: 'icon_pvp', group: 'Icons (cố định)', label: 'Icon PvP', hint: 'Icon PvP trên màn chính' },
-        { id: 'icon_wb', group: 'Icons (cố định)', label: 'Icon WB', hint: 'Icon World Boss trên màn chính' },
-        { id: 'icon_raid', group: 'Icons (cố định)', label: 'Icon Raid', hint: 'Icon Raid trên màn chính' },
+        // ===== Dungeon =====
+        { id: 'icon_dungeon', group: 'Dungeon', label: 'Icon Dungeon', hint: 'Icon Dungeon trên màn chính' },
+        { id: 'text_dungeon', group: 'Dungeon', label: 'Text Dungeon', hint: 'Chữ "Dungeon" khi vào màn' },
+        { id: 'dungeon_click1', group: 'Dungeon', label: 'Dungeon Click 1', hint: 'Nút click thứ 1 khi vào Dungeon' },
+        { id: 'dungeon_click2', group: 'Dungeon', label: 'Dungeon Click 2', hint: 'Nút click thứ 2 (hiện sau click 1)' },
+        { id: 'dungeon_click3', group: 'Dungeon', label: 'Dungeon Click 3', hint: 'Nút click thứ 3 (hiện sau click 2)' },
 
-        // ===== Icons hoạt động xoay tua =====
-        { id: 'icon_invasion', group: 'Icons (xoay tua)', label: 'Icon Invasion', hint: 'Icon Invasion (nếu tuần này có)' },
-        { id: 'icon_expedition', group: 'Icons (xoay tua)', label: 'Icon Expedition', hint: 'Icon Expedition (nếu tuần này có)' },
-        { id: 'icon_gvp', group: 'Icons (xoay tua)', label: 'Icon GvP', hint: 'Icon GvP (nếu tuần này có)' },
-        { id: 'icon_trials', group: 'Icons (xoay tua)', label: 'Icon Trials', hint: 'Icon Trials (nếu tuần này có)' },
-        { id: 'icon_gauntlet', group: 'Icons (xoay tua)', label: 'Icon Gauntlet', hint: 'Icon Gauntlet (nếu tuần này có)' },
+        // ===== PvP =====
+        { id: 'icon_pvp', group: 'PvP', label: 'Icon PvP', hint: 'Icon PvP trên màn chính' },
+        { id: 'text_pvp', group: 'PvP', label: 'Text PvP', hint: 'Chữ "PvP" khi vào màn' },
 
-        // ===== Text xác nhận màn =====
-        { id: 'text_dungeon', group: 'Text màn', label: 'Text Dungeon', hint: 'Chữ "Dungeon" khi vào màn' },
-        { id: 'text_pvp', group: 'Text màn', label: 'Text PvP', hint: 'Chữ "PvP" khi vào màn' },
-        { id: 'text_wb', group: 'Text màn', label: 'Text WB', hint: 'Chữ "World Boss" khi vào màn' },
-        { id: 'text_raid', group: 'Text màn', label: 'Text Raid', hint: 'Chữ "Raid" khi vào màn' },
-        { id: 'text_invasion', group: 'Text màn', label: 'Text Invasion', hint: 'Chữ "Invasion"' },
-        { id: 'text_expedition', group: 'Text màn', label: 'Text Expedition', hint: 'Chữ "Expedition"' },
-        { id: 'text_gvp', group: 'Text màn', label: 'Text GvP', hint: 'Chữ "GvP"' },
-        { id: 'text_trials', group: 'Text màn', label: 'Text Trials', hint: 'Chữ "Trials"' },
-        { id: 'text_gauntlet', group: 'Text màn', label: 'Text Gauntlet', hint: 'Chữ "Gauntlet"' },
+        // ===== WB =====
+        { id: 'icon_wb', group: 'WB', label: 'Icon WB', hint: 'Icon World Boss trên màn chính' },
+        { id: 'text_wb', group: 'WB', label: 'Text WB', hint: 'Chữ "World Boss" khi vào màn' },
+        { id: 'wb_click1', group: 'WB', label: 'WB Click 1', hint: 'Nút click thứ 1 khi vào WB' },
+        { id: 'wb_click2', group: 'WB', label: 'WB Click 2', hint: 'Nút click thứ 2 (hiện sau click 1)' },
+        { id: 'wb_click3', group: 'WB', label: 'WB Click 3', hint: 'Nút click thứ 3 (hiện sau click 2)' },
+
+        // ===== Raid =====
+        { id: 'icon_raid', group: 'Raid', label: 'Icon Raid', hint: 'Icon Raid trên màn chính' },
+        { id: 'text_raid', group: 'Raid', label: 'Text Raid', hint: 'Chữ "Raid" khi vào màn' },
+        { id: 'raid_click1', group: 'Raid', label: 'Raid Click 1', hint: 'Nút click thứ 1 khi vào Raid' },
+        { id: 'raid_click2', group: 'Raid', label: 'Raid Click 2', hint: 'Nút click thứ 2 (hiện sau click 1)' },
+        { id: 'raid_click3', group: 'Raid', label: 'Raid Click 3', hint: 'Nút click thứ 3 (hiện sau click 2)' },
+
+        // ===== Invasion (xoay tua) =====
+        { id: 'icon_invasion', group: 'Invasion', label: 'Icon Invasion', hint: 'Icon Invasion (nếu tuần này có)' },
+        { id: 'text_invasion', group: 'Invasion', label: 'Text Invasion', hint: 'Chữ "Invasion"' },
+
+        // ===== Expedition (xoay tua) =====
+        { id: 'icon_expedition', group: 'Expedition', label: 'Icon Expedition', hint: 'Icon Expedition (nếu tuần này có)' },
+        { id: 'text_expedition', group: 'Expedition', label: 'Text Expedition', hint: 'Chữ "Expedition"' },
+
+        // ===== GvP (xoay tua) =====
+        { id: 'icon_gvp', group: 'GvP', label: 'Icon GvP', hint: 'Icon GvP (nếu tuần này có)' },
+        { id: 'text_gvp', group: 'GvP', label: 'Text GvP', hint: 'Chữ "GvP"' },
+
+        // ===== Trials (xoay tua) =====
+        { id: 'icon_trials', group: 'Trials', label: 'Icon Trials', hint: 'Icon Trials (nếu tuần này có)' },
+        { id: 'text_trials', group: 'Trials', label: 'Text Trials', hint: 'Chữ "Trials"' },
+
+        // ===== Gauntlet (xoay tua) =====
+        { id: 'icon_gauntlet', group: 'Gauntlet', label: 'Icon Gauntlet', hint: 'Icon Gauntlet (nếu tuần này có)' },
+        { id: 'text_gauntlet', group: 'Gauntlet', label: 'Text Gauntlet', hint: 'Chữ "Gauntlet"' },
 
         // ===== Popups =====
         { id: 'popup_confirm', group: 'Popups', label: 'Popup Confirm', hint: 'Popup "Xác nhận chưa full team"' },
         { id: 'popup_outOfTickets', group: 'Popups', label: 'Popup Hết vé', hint: 'Popup "Hết vé" / "Out of tickets"' },
         { id: 'popup_leave', group: 'Popups', label: 'Popup Thoát (text)', hint: 'Text popup "Thoát trận"' },
-        { id: 'popup_leave_yes', group: 'Popups', label: 'Popup Thoát (nút Yes)', hint: 'Nút Yes trong popup thoát trận' },
-
-        // ===== WB clicks =====
-        { id: 'wb_click1', group: 'WB', label: 'WB Click 1', hint: 'Nút click thứ 1 khi vào WB' },
-        { id: 'wb_click2', group: 'WB', label: 'WB Click 2', hint: 'Nút click thứ 2 (hiện sau click 1)' },
-        { id: 'wb_click3', group: 'WB', label: 'WB Click 3', hint: 'Nút click thứ 3 (hiện sau click 2)' },
-
-        // ===== Raid clicks =====
-        { id: 'raid_click1', group: 'Raid', label: 'Raid Click 1', hint: 'Nút click thứ 1 khi vào Raid' },
-        { id: 'raid_click2', group: 'Raid', label: 'Raid Click 2', hint: 'Nút click thứ 2 (hiện sau click 1)' },
-        { id: 'raid_click3', group: 'Raid', label: 'Raid Click 3', hint: 'Nút click thứ 3 (hiện sau click 2)' },
-
-        // ===== Dungeon clicks =====
-        { id: 'dungeon_click1', group: 'Dungeon', label: 'Dungeon Click 1', hint: 'Nút click thứ 1 khi vào Dungeon' },
-        { id: 'dungeon_click2', group: 'Dungeon', label: 'Dungeon Click 2', hint: 'Nút click thứ 2 (hiện sau click 1)' },
-        { id: 'dungeon_click3', group: 'Dungeon', label: 'Dungeon Click 3', hint: 'Nút click thứ 3 (hiện sau click 2)' }
+        { id: 'popup_leave_yes', group: 'Popups', label: 'Popup Thoát (nút Yes)', hint: 'Nút Yes trong popup thoát trận' }
     ];
 
     // =========================================================
@@ -158,7 +164,7 @@
     };
 
     // =========================================================
-    // SAVE / GET / REMOVE SINGLE REGION
+    // SAVE / GET / REMOVE
     // =========================================================
 
     BH.saveScreenRegion = function (regionId, bufX, bufY, width, height) {
@@ -265,7 +271,7 @@
     };
 
     // =========================================================
-    // RESET ALL
+    // RESET
     // =========================================================
 
     BH.clearAllScreens = function () {

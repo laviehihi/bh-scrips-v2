@@ -157,24 +157,24 @@
     };
 
     // =========================================================
-    // RESET HOVER
+    // RESET HOVER — click vào góc phải trên (tránh UI)
     // =========================================================
 
     BH.resetHover = function () {
         const canvas = BH.getCanvas();
         if (!canvas) return;
 
-        const pos = BH.bufferToClient(
-            canvas,
-            BH.RESET_POINT_X,
-            BH.RESET_POINT_Y
-        );
+        // Góc phải trên
+        const bufX = canvas.width - 20;
+        const bufY = canvas.height - 20;
+
+        const pos = BH.bufferToClient(canvas, bufX, bufY);
 
         BH.dispatchFullClick(canvas, pos.clientX, pos.clientY);
     };
 
     // =========================================================
-    // RESET POINT
+    // RESET POINT (giữ cho tương thích, nhưng resetHover dùng góc phải trên)
     // =========================================================
 
     BH.RESET_POINT_X = 20;

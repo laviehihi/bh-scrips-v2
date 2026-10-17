@@ -1,4 +1,6 @@
 // core/navigation.js
+// Điều hướng giữa các màn hình.
+// Click 3 nút: "thấy là click", không async verify.
 
 (function (global) {
     'use strict';
@@ -51,6 +53,7 @@
 
         BH.setMsg('Click icon ' + activityId);
 
+        // Chờ 2s → check text màn
         BH.rt.setTimeout(function () {
             if (!map.text || !BH.getScreenRegion(map.text)) {
                 if (callback) callback(true);
@@ -97,95 +100,54 @@
     };
 
     // =========================================================
-    // SEQUENTIAL CLICKS (delay 1s)
+    // CLICK SEQUENCE — "thấy là click", không async verify
     // =========================================================
+    // Click 1 → chờ 2s → click 2 → chờ 2s → click 3 → chờ 2s → callback
 
-    BH.doSequentialClicks = function (regionIds, callback) {
+    BH.doClickSequence = function (regionIds, callback) {
         let index = 0;
-        let clickRetry = 0;
-        const MAX_CLICK_RETRY = 3;
-        let waitRetry = 0;
-        const MAX_WAIT_RETRY = 10;
 
-        function clickCurrent() {
+        function next() {
             if (index >= regionIds.length) {
                 if (callback) callback(true);
                 return;
             }
 
             const regionId = regionIds[index];
+            index++;
 
             if (!BH.getScreenRegion(regionId)) {
                 BH.setMsg('⚠ Chưa chụp ' + regionId + ' — skip');
-                index++;
-                clickRetry = 0;
-                waitRetry = 0;
-                BH.rt.setTimeout(clickCurrent, 500);
+                BH.rt.setTimeout(next, 500);
                 return;
             }
 
-            if (!BH.matchRegion(regionId)) {
-                waitRetry++;
-
-                if (waitRetry > MAX_WAIT_RETRY) {
-                    BH.setMsg('⚠ Không thấy ' + regionId + ' — skip');
-                    index++;
-                    clickRetry = 0;
-                    waitRetry = 0;
-                    BH.rt.setTimeout(clickCurrent, 500);
-                    return;
-                }
-
-                BH.rt.setTimeout(clickCurrent, 500);
-                return;
+            // Thấy region → click
+            if (BH.matchRegion(regionId)) {
+                BH.clickRegion(regionId);
+                BH.setMsg('Click ' + index + '/' + regionIds.length + ': ' + regionId);
+                BH.rt.setTimeout(next, 2000);
+            } else {
+                // Chưa thấy → chờ 500ms → check lại
+                index--;  // giữ nguyên index
+                BH.rt.setTimeout(next, 500);
             }
-
-            waitRetry = 0;
-
-            BH.clickRegion(regionId);
-            BH.setMsg('Click ' + (index + 1) + '/' + regionIds.length);
-
-            // Chờ 1s → check nút đã biến mất chưa
-            BH.rt.setTimeout(function () {
-                if (BH.matchRegion(regionId)) {
-                    clickRetry++;
-
-                    if (clickRetry >= MAX_CLICK_RETRY) {
-                        BH.setMsg('⚠ Click fail ' + regionId + ' — skip');
-                        index++;
-                        clickRetry = 0;
-                        waitRetry = 0;
-                        BH.rt.setTimeout(clickCurrent, 500);
-                        return;
-                    }
-
-                    BH.rt.setTimeout(clickCurrent, 1000);
-                    return;
-                }
-
-                index++;
-                clickRetry = 0;
-                BH.rt.setTimeout(clickCurrent, 500);
-            }, 1000);
         }
 
-        clickCurrent();
+        next();
     };
 
-    // =========================================================
-    // WB / RAID / DUNGEON CLICKS
-    // =========================================================
-
+    // Wrapper
     BH.doWBClicks = function (callback) {
-        BH.doSequentialClicks(['wb_click1', 'wb_click2', 'wb_click3'], callback);
+        BH.doClickSequence(['wb_click1', 'wb_click2', 'wb_click3'], callback);
     };
 
     BH.doRaidClicks = function (callback) {
-        BH.doSequentialClicks(['raid_click1', 'raid_click2', 'raid_click3'], callback);
+        BH.doClickSequence(['raid_click1', 'raid_click2', 'raid_click3'], callback);
     };
 
     BH.doDungeonClicks = function (callback) {
-        BH.doSequentialClicks(['dungeon_click1', 'dungeon_click2', 'dungeon_click3'], callback);
+        BH.doClickSequence(['dungeon_click1', 'dungeon_click2', 'dungeon_click3'], callback);
     };
 
     // =========================================================
