@@ -141,11 +141,6 @@
         const options = BH.loadTemplateOptions(template.id);
         const duration = options.duration || 10;
 
-        if (BH.invaAutoCheckedAt == null) {
-            BH.invaAutoCheckedAt = 0;
-            BH.invaEscSent = false;
-        }
-
         // Phase 1
         if (!BH.invaAutoCheckedAt) {
             const beforeAuto = ['start', 'confirmTeam', 'yesNo'];
@@ -168,7 +163,9 @@
 
                     if (step.id === 'confirmTeam' || step.id === 'yesNo') {
                         BH.rt.setTimeout(function () {
-                            if (BH.activeAuto === template.id || BH.activeAuto === 'all') {
+                            const isThisTemplate = (BH.activeAuto === template.id);
+                            const isInvasionInAll = (BH.activeAuto === 'all' && BH.allCurrentActivity === 'invasion');
+                            if (isThisTemplate || isInvasionInAll) {
                                 checkAutoAndStartTimer(template);
                             }
                         }, 2000);

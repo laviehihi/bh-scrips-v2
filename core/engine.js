@@ -26,7 +26,6 @@
     BH._extraClicksRunning = false;
     BH._activityOutOfTickets = false;
     BH._outOfTicketsHandling = false;
-    BH._flowReturnHomeClicked = false;
     BH._navigatingBack = false;
 
     // RESET
@@ -40,7 +39,6 @@
         BH._extraClicksRunning = false;
         BH._activityOutOfTickets = false;
         BH._outOfTicketsHandling = false;
-        BH._flowReturnHomeClicked = false;
         BH._navigatedForActivity = false;
         BH._navigatingBack = false;
 
@@ -49,22 +47,18 @@
 
     // =========================================================
     // RESOLVE ACTIVITY ID FROM TEMPLATE ID
-    // Template id có thể khác activity id (inva → invasion, tg → trials/gauntlet)
     // =========================================================
 
     function resolveActivityForTemplate(templateId) {
-        // 1-1 mapping đặc biệt
         if (templateId === 'inva') return 'invasion';
         if (templateId === 'rerun') return 'dungeon';
 
-        // tg: trials hoặc gauntlet — chọn cái có region đã chụp
         if (templateId === 'tg') {
             if (BH.getScreenRegion('icon_trials')) return 'trials';
             if (BH.getScreenRegion('icon_gauntlet')) return 'gauntlet';
             return 'trials';
         }
 
-        // Còn lại: templateId trùng activityId (pvp, wb, expedition, gvp)
         return templateId;
     }
 
@@ -130,8 +124,13 @@
             BH._outOfTicketsHandling = false;
 
             if (BH.activeAuto === 'all') {
-                BH.allState = 'next';
-                BH._activityOutOfTickets = false;
+                if (success && BH.isMainScreen()) {
+                    BH.allState = 'next';
+                    BH._activityOutOfTickets = false;
+                } else {
+                    BH._activityOutOfTickets = false;
+                    BH.setMsg('⚠ Không về được main — thử lại');
+                }
             } else {
                 BH.stopAuto();
                 BH.setMsg('⚠ Hết vé — dừng bot');
@@ -193,7 +192,7 @@
         const template = BH.getTemplate(BH.activeAuto);
         if (!template) return;
 
-        // Popup: chỉ outOfTickets và leave, bỏ confirm
+        // Popup: outOfTickets và leave
         if (BH.detectPopup && !BH.navigationPending && !BH._outOfTicketsHandling) {
             const popup = BH.detectPopup();
 
@@ -215,7 +214,6 @@
             BH._navigatedForActivity = true;
             BH.navigationPending = true;
 
-            // Resolve activity id từ template id (inva → invasion, tg → trials/gauntlet)
             const activityId = resolveActivityForTemplate(BH.activeAuto);
 
             ensureMainScreen(function (ok) {
@@ -278,13 +276,11 @@
     BH.startAllContent = function () {
         if (BH.activeAuto) BH.stopAuto();
 
-        // Thoát setup mode nếu đang mở
         if (BH.setupMode && BH.exitSetupMode) BH.exitSetupMode();
         if (BH.screensSetupMode && BH.exitScreensSetup) BH.exitScreensSetup();
 
         BH.loadScreens();
 
-        // Check đủ icon màn chính để isMainScreen hoạt động
         let mainIconCount = 0;
         for (let i = 0; i < BH.MAIN_ICONS.length; i++) {
             if (BH.getScreenRegion(BH.MAIN_ICONS[i])) mainIconCount++;
@@ -316,7 +312,6 @@
         BH._extraClicksRunning = false;
         BH._activityOutOfTickets = false;
         BH._outOfTicketsHandling = false;
-        BH._flowReturnHomeClicked = false;
         BH._navigatingBack = false;
 
         BH.activeAuto = 'all';
@@ -336,7 +331,7 @@
     function runAllContentTick() {
         if (!BH.allContentRunning) return;
 
-        // Popup: chỉ outOfTickets và leave
+        // Popup: outOfTickets và leave
         if (BH.detectPopup && !BH.navigationPending && !BH._outOfTicketsHandling) {
             const popup = BH.detectPopup();
 
@@ -365,6 +360,8 @@
 
         // NAVIGATE
         if (BH.allState === 'navigate') {
+            if (BH.clearPendingClick) BH.clearPendingClick();
+
             const screen = BH.detectScreen();
             BH.currentScreen = screen;
 
@@ -399,7 +396,6 @@
                 return;
             }
 
-            // Không phải main → ESC về
             if (!BH._navigatingBack) {
                 BH._navigatingBack = true;
                 ensureMainScreen(function (ok) {
@@ -439,7 +435,7 @@
             return;
         }
 
-        // FLOW
+        // FLOW — loop liên tục cho đến khi hết vé (outOfTickets)
         if (BH.allState === 'flow') {
             const map = BH.ACTIVITY_MAP[currentActivity];
             const templateId = (map && map.templateId) ? map.templateId : currentActivity;
@@ -467,15 +463,13 @@
                 stepHandler.action(step, clickDelay);
             });
 
-            if (BH._flowReturnHomeClicked) {
-                BH._flowReturnHomeClicked = false;
-                BH.allState = 'next';
-            }
             return;
         }
 
         // NEXT
         if (BH.allState === 'next') {
+            if (BH.clearPendingClick) BH.clearPendingClick();
+
             BH.allContentIndex++;
 
             if (BH.allContentIndex >= BH.allContentQueue.length) {
@@ -489,7 +483,6 @@
             BH._extraClicksRunning = false;
             BH._activityOutOfTickets = false;
             BH._outOfTicketsHandling = false;
-            BH._flowReturnHomeClicked = false;
             BH._navigatingBack = false;
             BH.lastActionTime = BH.rt.now();
             BH.setMsg('→ ' + BH.allContentQueue[BH.allContentIndex]);

@@ -179,7 +179,10 @@
         let nameText = 'No template';
 
         if (BH.activeAuto === 'all' && BH.allCurrentActivity) {
-            nameText = 'All · ' + BH.allCurrentActivity;
+            const idx = (BH.allContentIndex || 0) + 1;
+            const total = (BH.allContentQueue && BH.allContentQueue.length) || 0;
+            const stateLabel = BH.allState || '';
+            nameText = 'All ' + idx + '/' + total + ' · ' + BH.allCurrentActivity + ' · ' + stateLabel;
         } else {
             const tid = BH.activeTemplateId || null;
             const t = tid ? BH.getTemplate(tid) : null;
