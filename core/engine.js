@@ -252,7 +252,22 @@
     BH.startAllContent = function () {
         if (BH.activeAuto) BH.stopAuto();
 
+        // Thoát setup mode nếu đang mở
+        if (BH.setupMode && BH.exitSetupMode) BH.exitSetupMode();
+        if (BH.screensSetupMode && BH.exitScreensSetup) BH.exitScreensSetup();
+
         BH.loadScreens();
+
+        // Check đủ icon màn chính để isMainScreen hoạt động
+        let mainIconCount = 0;
+        for (let i = 0; i < BH.MAIN_ICONS.length; i++) {
+            if (BH.getScreenRegion(BH.MAIN_ICONS[i])) mainIconCount++;
+        }
+        if (mainIconCount < 3) {
+            BH.setMsg('⚠ Chưa chụp đủ icon màn chính (cần ≥3/' + BH.MAIN_ICONS.length + ')');
+            if (BH.render) BH.render();
+            return;
+        }
 
         const queue = BH.ALL_CONTENT_DEFAULT.filter(function (id) {
             const map = BH.ACTIVITY_MAP[id];
@@ -262,6 +277,7 @@
 
         if (queue.length === 0) {
             BH.setMsg('⚠ Chưa chụp icon hoạt động nào');
+            if (BH.render) BH.render();
             return;
         }
 

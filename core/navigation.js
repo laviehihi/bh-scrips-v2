@@ -23,7 +23,9 @@
     };
 
     // =========================================================
-    // NAVIGATE TO ACTIVITY — click vị trí, không check ảnh icon
+    // NAVIGATE TO ACTIVITY
+    // - Click vào vị trí icon đã lưu (không check ảnh icon)
+    // - Sau đó verify bằng text tương ứng
     // =========================================================
 
     BH.navigateToActivity = function (activityId, callback) {
@@ -51,9 +53,36 @@
         BH.clickAtBuf(cx, cy);
         BH.setMsg('Click icon ' + activityId);
 
-        BH.rt.setTimeout(function () {
-            if (callback) callback(true);
-        }, 2000);
+        // Nếu chưa chụp text tương ứng → fallback tin click sau 2s
+        const textRegionId = map.text;
+        if (!textRegionId || !BH.getScreenRegion(textRegionId)) {
+            BH.rt.setTimeout(function () {
+                if (callback) callback(true);
+            }, 2000);
+            return;
+        }
+
+        // Verify bằng text: poll mỗi 300ms, tối đa 5s
+        const startTime = BH.rt.now();
+        const maxWait = 5000;
+        const interval = 300;
+
+        function poll() {
+            if (BH.matchRegion(textRegionId)) {
+                if (callback) callback(true);
+                return;
+            }
+
+            if (BH.rt.now() - startTime >= maxWait) {
+                BH.setMsg('⚠ Không vào được ' + activityId);
+                if (callback) callback(false, 'Text not matched: ' + textRegionId);
+                return;
+            }
+
+            BH.rt.setTimeout(poll, interval);
+        }
+
+        BH.rt.setTimeout(poll, interval);
     };
 
     // =========================================================
@@ -93,9 +122,15 @@
 
     BH.doClickSequence = function (regionIds, callback) {
         let index = 0;
+        let skippedCount = 0;
 
         function next() {
             if (index >= regionIds.length) {
+                // Nếu tất cả region đều chưa chụp → fail
+                if (skippedCount >= regionIds.length) {
+                    if (callback) callback(false, 'All regions missing');
+                    return;
+                }
                 if (callback) callback(true);
                 return;
             }
@@ -104,6 +139,7 @@
 
             if (!BH.getScreenRegion(regionId)) {
                 BH.setMsg('⚠ Chưa chụp ' + regionId + ' — skip');
+                skippedCount++;
                 index++;
                 BH.rt.setTimeout(next, 500);
                 return;
