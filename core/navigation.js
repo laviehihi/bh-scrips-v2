@@ -24,8 +24,6 @@
 
     // =========================================================
     // NAVIGATE TO ACTIVITY
-    // - Click icon, verify text
-    // - Guard: nếu bot đã stop (activeAuto thay đổi) → không callback
     // =========================================================
 
     BH.navigateToActivity = function (activityId, callback) {
@@ -49,21 +47,19 @@
         const cx = pos.bufX + Math.floor(pos.width / 2);
         const cy = pos.bufY + Math.floor(pos.height / 2);
 
-        // Snapshot activeAuto tại thời điểm gọi
         const expectedActive = BH.activeAuto;
-        const expectedActivity = BH.allCurrentActivity;
 
         BH.clickAtBuf(cx, cy);
         BH.setMsg('Click icon ' + activityId);
 
-        // Helper: chỉ callback nếu bot còn chạy đúng activity này
+        // Chỉ callback nếu bot còn chạy (không check allCurrentActivity để tránh nuốt callback)
         function safeCallback(success, reason) {
+            if (BH.activeAuto === null) return;
             if (BH.activeAuto !== expectedActive) return;
-            if (BH.activeAuto === 'all' && BH.allCurrentActivity !== expectedActivity) return;
             if (callback) callback(success, reason);
         }
 
-        // Fallback: nếu chưa chụp text → tin click sau 2s
+        // Fallback: chưa chụp text → tin click sau 2s
         const textRegionId = map.text;
         if (!textRegionId || !BH.getScreenRegion(textRegionId)) {
             BH.rt.setTimeout(function () {
@@ -72,7 +68,7 @@
             return;
         }
 
-        // Verify bằng text: poll mỗi 300ms, tối đa 5s
+        // Verify bằng text: poll 300ms, tối đa 5s
         const startTime = BH.rt.now();
         const maxWait = 5000;
         const interval = 300;
@@ -87,7 +83,7 @@
 
             if (BH.rt.now() - startTime >= maxWait) {
                 BH.setMsg('⚠ Không vào được ' + activityId);
-                safeCallback(false, 'Text not matched: ' + textRegionId);
+                safeCallback(false, 'Text not matched');
                 return;
             }
 
@@ -129,25 +125,29 @@
     };
 
     // =========================================================
-    // CLICK SEQUENCE (có timeout để tránh treo)
+    // CLICK SEQUENCE
+    // - Không timeout nếu đã click được ≥1 (tránh bỏ dở giữa chừng)
+    // - Chỉ timeout nếu chưa click được gì sau 20s (region chưa chụp / không match)
     // =========================================================
 
     BH.doClickSequence = function (regionIds, callback) {
         let index = 0;
         let skippedCount = 0;
+        let clickedCount = 0;
 
         const startTime = BH.rt.now();
-        const TIMEOUT = 15000;
+        const TIMEOUT_EMPTY = 20000;
 
         function next() {
-            if (BH.rt.now() - startTime > TIMEOUT) {
-                BH.setMsg('⚠ Click sequence timeout');
-                if (callback) callback(false, 'Timeout');
+            // Timeout chỉ khi chưa click được gì
+            if (clickedCount === 0 && BH.rt.now() - startTime > TIMEOUT_EMPTY) {
+                BH.setMsg('⚠ Không click được nút nào');
+                if (callback) callback(false, 'Timeout no clicks');
                 return;
             }
 
             if (index >= regionIds.length) {
-                if (skippedCount >= regionIds.length) {
+                if (clickedCount === 0 && skippedCount >= regionIds.length) {
                     if (callback) callback(false, 'All regions missing');
                     return;
                 }
@@ -158,15 +158,15 @@
             const regionId = regionIds[index];
 
             if (!BH.getScreenRegion(regionId)) {
-                BH.setMsg('⚠ Chưa chụp ' + regionId + ' — skip');
                 skippedCount++;
                 index++;
-                BH.rt.setTimeout(next, 500);
+                BH.rt.setTimeout(next, 300);
                 return;
             }
 
             if (BH.matchRegion(regionId)) {
                 BH.clickRegion(regionId);
+                clickedCount++;
                 BH.setMsg('Click ' + (index + 1) + '/' + regionIds.length + ': ' + regionId);
                 index++;
                 BH.rt.setTimeout(next, 2000);
@@ -178,45 +178,28 @@
         next();
     };
 
-    BH.doWBClicks = function (callback) {
-        BH.doClickSequence(['wb_click1', 'wb_click2', 'wb_click3'], callback);
-    };
-
-    BH.doRaidClicks = function (callback) {
-        BH.doClickSequence(['raid_click1', 'raid_click2', 'raid_click3'], callback);
-    };
-
-    BH.doDungeonClicks = function (callback) {
-        BH.doClickSequence(['dungeon_click1', 'dungeon_click2', 'dungeon_click3'], callback);
-    };
-
     // =========================================================
     // HANDLE OUT OF TICKETS
-    // ESC liên tục, click Yes nếu popup leave, ESC tiếp, về main
+    // ESC liên tục → về main
+    // CHỈ gọi khi thực sự hết vé (popup_outOfTickets đã match)
     // =========================================================
 
     BH.handleOutOfTickets = function (callback) {
-        BH.setMsg('⚠ Hết vé — ESC để về màn chính');
+        BH.setMsg('⚠ Hết vé — ESC về màn chính');
 
         let escCount = 0;
-        const maxEsc = 10;
+        const maxEsc = 12;
 
         const expectedActive = BH.activeAuto;
-        const expectedActivity = BH.allCurrentActivity;
 
         function safeCallback(success, reason) {
+            if (BH.activeAuto === null) return;
             if (BH.activeAuto !== expectedActive) return;
-            if (BH.activeAuto === 'all' && BH.allCurrentActivity !== expectedActivity) return;
             if (callback) callback(success, reason);
         }
 
         function step() {
             if (BH.activeAuto !== expectedActive) return;
-
-            if (escCount >= maxEsc) {
-                safeCallback(false, 'ESC quá nhiều lần');
-                return;
-            }
 
             if (BH.isMainScreen()) {
                 BH.setMsg('✓ Đã về màn chính');
@@ -224,7 +207,12 @@
                 return;
             }
 
-            // Popup leave → click Yes trước
+            if (escCount >= maxEsc) {
+                safeCallback(false, 'ESC quá nhiều lần');
+                return;
+            }
+
+            // Nếu popup leave đang hiện → click Yes
             if (BH.matchRegion('popup_leave')) {
                 if (BH.getScreenRegion('popup_leave_yes')) {
                     BH.clickRegion('popup_leave_yes');
@@ -233,14 +221,10 @@
                     BH.rt.setTimeout(function () {
                         if (BH.activeAuto !== expectedActive) return;
                         if (BH.isMainScreen()) {
-                            BH.setMsg('✓ Đã về màn chính');
                             safeCallback(true);
                             return;
                         }
-                        escCount++;
-                        BH.dispatchKeyPress('Escape');
-                        BH.setMsg('ESC lần ' + escCount);
-                        BH.rt.setTimeout(step, 2000);
+                        step();
                     }, 2000);
                     return;
                 }
@@ -253,7 +237,6 @@
             BH.rt.setTimeout(function () {
                 if (BH.activeAuto !== expectedActive) return;
                 if (BH.isMainScreen()) {
-                    BH.setMsg('✓ Đã về màn chính');
                     safeCallback(true);
                     return;
                 }

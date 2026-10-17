@@ -29,7 +29,8 @@
     BH._navigatingBack = false;
     BH._navigateInFlight = false;
     BH._navigateStartTime = 0;
-    BH._lastAllStateLog = '';
+    BH._outOfTicketsStartTime = 0;
+    BH._notMainSince = 0;
 
     // RESET
     function resetRuntimeState() {
@@ -46,6 +47,8 @@
         BH._navigatingBack = false;
         BH._navigateInFlight = false;
         BH._navigateStartTime = 0;
+        BH._outOfTicketsStartTime = 0;
+        BH._notMainSince = 0;
 
         if (BH.clearPendingClick) BH.clearPendingClick();
     }
@@ -70,7 +73,7 @@
     BH.resolveActivityForTemplate = resolveActivityForTemplate;
 
     // =========================================================
-    // LOG STATE TRANSITION
+    // SET ALL STATE
     // =========================================================
 
     function setAllState(newState, reason) {
@@ -83,13 +86,11 @@
         const idx = (BH.allContentIndex || 0) + 1;
         const total = (BH.allContentQueue && BH.allContentQueue.length) || 0;
 
-        const logMsg = '[ALL] ' + idx + '/' + total + ' ' + act + ': ' + old + ' → ' + newState + (reason ? ' (' + reason + ')' : '');
-        console.log(logMsg);
-
-        BH._lastAllStateLog = logMsg;
+        console.log('[ALL] ' + idx + '/' + total + ' ' + act + ': ' + old + ' → ' + newState + (reason ? ' (' + reason + ')' : ''));
 
         if (newState === 'navigate') {
             BH._navigateStartTime = BH.rt.now();
+            BH._notMainSince = 0;
         }
     }
 
@@ -148,9 +149,23 @@
         if (BH._outOfTicketsHandling) return;
         BH._outOfTicketsHandling = true;
         BH._activityOutOfTickets = true;
+        BH._outOfTicketsStartTime = BH.rt.now();
+
+        const expectedActive = BH.activeAuto;
 
         BH.handleOutOfTickets(function (success) {
             BH._outOfTicketsHandling = false;
+            BH._outOfTicketsStartTime = 0;
+
+            if (BH.activeAuto === null) {
+                BH._activityOutOfTickets = false;
+                return;
+            }
+
+            if (BH.activeAuto !== expectedActive) {
+                BH._activityOutOfTickets = false;
+                return;
+            }
 
             if (BH.activeAuto === 'all') {
                 if (success && BH.isMainScreen()) {
@@ -158,7 +173,7 @@
                     BH._activityOutOfTickets = false;
                 } else {
                     BH._activityOutOfTickets = false;
-                    BH.setMsg('⚠ Không về được main — thử lại');
+                    BH.setMsg('⚠ Không về được main');
                 }
             } else {
                 BH.stopAuto();
@@ -167,7 +182,7 @@
         });
     }
 
-    // ENSURE MAIN SCREEN
+    // ENSURE MAIN SCREEN — KHÔNG ESC nếu đang trong trận (tránh hiện bảng thoát)
     function ensureMainScreen(callback) {
         if (BH.isMainScreen()) {
             if (callback) callback(true);
@@ -187,6 +202,15 @@
 
             if (BH.isMainScreen()) {
                 if (callback) callback(true);
+                return;
+            }
+
+            // Nếu popup leave đang hiện → click Yes (thoát trận) rồi mới ESC tiếp
+            if (BH.matchRegion('popup_leave')) {
+                if (BH.getScreenRegion('popup_leave_yes')) {
+                    BH.clickRegion('popup_leave_yes');
+                }
+                BH.rt.setTimeout(step, 2000);
                 return;
             }
 
@@ -221,7 +245,7 @@
         const template = BH.getTemplate(BH.activeAuto);
         if (!template) return;
 
-        // Popup: outOfTickets và leave
+        // Popup
         if (BH.detectPopup && !BH.navigationPending && !BH._outOfTicketsHandling) {
             const popup = BH.detectPopup();
 
@@ -230,15 +254,13 @@
                 return;
             }
 
-            if (popup === 'leave') {
-                if (BH.getScreenRegion('popup_leave_yes')) BH.clickRegion('popup_leave_yes');
-                return;
-            }
+            // Không click Yes popup leave ở single mode — chỉ click khi outOfTickets handling
+            // (tránh ESC nhầm khi đang trong trận)
         }
 
         if (BH._activityOutOfTickets) return;
 
-        // Navigate 1 lần duy nhất
+        // Navigate 1 lần
         if (!BH._navigatedForActivity && BH.screens && Object.keys(BH.screens).length > 0) {
             BH._navigatedForActivity = true;
             BH.navigationPending = true;
@@ -344,6 +366,8 @@
         BH._navigatingBack = false;
         BH._navigateInFlight = false;
         BH._navigateStartTime = BH.rt.now();
+        BH._outOfTicketsStartTime = 0;
+        BH._notMainSince = 0;
 
         BH.activeAuto = 'all';
         BH.lastActionTime = BH.rt.now();
@@ -363,7 +387,21 @@
     function runAllContentTick() {
         if (!BH.allContentRunning) return;
 
-        // Popup: outOfTickets và leave
+        // Force reset flag kẹt quá lâu
+        if (BH._navigateInFlight && BH._navigateStartTime && BH.rt.now() - BH._navigateStartTime > 15000) {
+            console.log('[ALL] Force reset _navigateInFlight');
+            BH._navigateInFlight = false;
+            BH._navigateStartTime = BH.rt.now();
+        }
+
+        if (BH._outOfTicketsHandling && BH._outOfTicketsStartTime && BH.rt.now() - BH._outOfTicketsStartTime > 40000) {
+            console.log('[ALL] Force reset _outOfTicketsHandling');
+            BH._outOfTicketsHandling = false;
+            BH._activityOutOfTickets = false;
+            BH._outOfTicketsStartTime = 0;
+        }
+
+        // Popup outOfTickets (chỉ khi không đang xử lý)
         if (BH.detectPopup && !BH._navigateInFlight && !BH._outOfTicketsHandling) {
             const popup = BH.detectPopup();
 
@@ -373,10 +411,7 @@
                 return;
             }
 
-            if (popup === 'leave') {
-                if (BH.getScreenRegion('popup_leave_yes')) BH.clickRegion('popup_leave_yes');
-                return;
-            }
+            // KHÔNG click Yes popup leave ở đây — chỉ xử lý trong outOfTickets / ensureMainScreen
         }
 
         if (BH._navigateInFlight) return;
@@ -392,9 +427,8 @@
 
         // NAVIGATE
         if (BH.allState === 'navigate') {
-            // Timeout cứng: nếu ở navigate quá 30s → bỏ qua
-            if (BH._navigateStartTime && BH.rt.now() - BH._navigateStartTime > 30000) {
-                BH.setMsg('⚠ Navigate timeout ' + currentActivity);
+            // Timeout 40s
+            if (BH._navigateStartTime && BH.rt.now() - BH._navigateStartTime > 40000) {
                 console.log('[ALL] Navigate timeout:', currentActivity);
                 setAllState('next', 'navigate timeout');
                 return;
@@ -406,6 +440,7 @@
             BH.currentScreen = screen;
 
             if (screen === 'main') {
+                BH._notMainSince = 0;
                 BH._navigateInFlight = true;
                 BH.setMsg('→ ' + currentActivity);
 
@@ -414,7 +449,7 @@
 
                     if (!success) {
                         BH.setMsg('⚠ Không vào được ' + currentActivity);
-                        setAllState('next', 'navigate fail');
+                        setAllState('next', 'nav fail');
                         return;
                     }
 
@@ -436,10 +471,21 @@
                 return;
             }
 
+            // Không phải main — chờ 5s trước khi ESC (tránh ESC nhầm khi đang trong trận)
+            if (BH._notMainSince === 0) {
+                BH._notMainSince = BH.rt.now();
+                return;
+            }
+
+            if (BH.rt.now() - BH._notMainSince < 5000) {
+                return; // chờ thêm
+            }
+
             if (!BH._navigatingBack) {
                 BH._navigatingBack = true;
                 ensureMainScreen(function (ok) {
                     BH._navigatingBack = false;
+                    BH._notMainSince = 0;
                     if (!ok) {
                         setAllState('next', 'ensure main fail');
                     }
@@ -477,9 +523,8 @@
             return;
         }
 
-        // FLOW — loop liên tục cho đến khi hết vé
+        // FLOW — loop liên tục, chỉ chuyển next khi outOfTickets
         if (BH.allState === 'flow') {
-            // Clear pendingClick từ activity trước (phòng race)
             if (BH.clearPendingClick) BH.clearPendingClick();
 
             const map = BH.ACTIVITY_MAP[currentActivity];
@@ -487,26 +532,22 @@
             const template = BH.getTemplate(templateId);
 
             if (!template) {
-                BH.setMsg('⚠ Không có template ' + templateId);
                 setAllState('next', 'no template');
                 return;
             }
 
-            // Check template calibrated
             let anyCalibrated = false;
             for (let i = 0; i < template.steps.length; i++) {
                 if (template.steps[i].calibrated) { anyCalibrated = true; break; }
             }
             if (!anyCalibrated) {
                 BH.setMsg('⚠ Template ' + templateId + ' chưa setup');
-                console.log('[ALL] Template not calibrated:', templateId);
                 setAllState('next', 'template not setup');
                 return;
             }
 
             const flowHandler = BH.FLOW_TYPES[template.flow.type];
             if (!flowHandler) {
-                BH.setMsg('⚠ Không có flow ' + template.flow.type);
                 setAllState('next', 'no flow');
                 return;
             }
@@ -523,7 +564,6 @@
             if (matched === false) {
                 BH.setMsg('⏳ ' + currentActivity + ': chờ nút');
             }
-
             return;
         }
 
@@ -545,6 +585,9 @@
             BH._outOfTicketsHandling = false;
             BH._navigatingBack = false;
             BH._navigateInFlight = false;
+            BH._navigateStartTime = 0;
+            BH._outOfTicketsStartTime = 0;
+            BH._notMainSince = 0;
             BH.lastActionTime = BH.rt.now();
 
             setAllState('navigate', 'next');
@@ -596,6 +639,8 @@
         BH._navigatingBack = false;
         BH._navigateInFlight = false;
         BH._navigateStartTime = 0;
+        BH._outOfTicketsStartTime = 0;
+        BH._notMainSince = 0;
 
         if (BH.checkTimerId !== null) {
             BH.rt.clearInterval(BH.checkTimerId);
