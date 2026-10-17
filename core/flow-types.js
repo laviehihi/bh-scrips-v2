@@ -33,6 +33,31 @@
     };
 
     // =========================================================
+    // RERUN — flow đơn giản: thấy nút rerun → click
+    // Dùng cho Raid và Dungeon sau khi đã vào màn.
+    // =========================================================
+
+    BH.FLOW_TYPES.rerun = function (template, onMatch) {
+        const order = template.flow.order || [];
+
+        for (let i = 0; i < order.length; i++) {
+            const step = BH.getStep(template, order[i]);
+            if (!step) continue;
+            if (!step.calibrated) continue;
+
+            const handler = BH.STEP_TYPES[step.type || 'click'];
+            if (!handler) continue;
+
+            if (handler.check(step)) {
+                onMatch(step);
+                return true;
+            }
+        }
+
+        return false;
+    };
+
+    // =========================================================
     // WB
     // =========================================================
 
@@ -74,7 +99,6 @@
         const currentPlayers = BH.countWBPlayers(template);
         BH.wbCurrentPlayers = currentPlayers;
 
-        // Update overlay mỗi lần đếm
         updateWBCountUI();
 
         if (currentPlayers < partySize) {
@@ -187,7 +211,6 @@
 
                     onMatch(step);
 
-                    // Đổi 1s → 2s
                     if (step.id === 'confirmTeam' || step.id === 'yesNo') {
                         BH.rt.setTimeout(function () {
                             if (BH.activeAuto === template.id) {
@@ -203,7 +226,21 @@
             return false;
         }
 
-        // Phase 2: đếm X giây
+        // Phase 2: đã check auto
+        // Check returnHome (thua sớm)
+        const returnHomeStep = BH.getStep(template, 'returnHome');
+
+        if (returnHomeStep && returnHomeStep.calibrated) {
+            const handler = BH.STEP_TYPES[returnHomeStep.type || 'click'];
+            if (handler && handler.check(returnHomeStep)) {
+                onMatch(returnHomeStep);
+                BH.invaAutoCheckedAt = 0;
+                BH.invaEscSent = false;
+                return true;
+            }
+        }
+
+        // Đếm X giây
         const elapsed = BH.rt.now() - BH.invaAutoCheckedAt;
 
         if (elapsed < duration * 1000) {
@@ -212,7 +249,7 @@
             return false;
         }
 
-        // Phase 3: hết X giây → ESC
+        // Phase 3: ESC
         if (!BH.invaEscSent) {
             BH.dispatchKeyPress('Escape');
             BH.invaEscSent = true;
