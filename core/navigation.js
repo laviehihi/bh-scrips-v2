@@ -7,7 +7,7 @@
     const BH = global.__BH__ = global.__BH__ || {};
 
     // =========================================================
-    // ACTIVITY MAP — có templateId để map sang template
+    // ACTIVITY MAP
     // =========================================================
 
     BH.ACTIVITY_MAP = {

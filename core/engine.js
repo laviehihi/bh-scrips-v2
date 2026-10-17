@@ -21,7 +21,6 @@
     BH.currentScreen = null;
     BH.navigationPending = false;
 
-    // All Content
     BH.allContentQueue = [];
     BH.allContentIndex = 0;
     BH.allContentRunning = false;
@@ -30,7 +29,6 @@
     BH._mainDetectedAt = 0;
     BH._extraClicksRunning = false;
 
-    // Out of tickets
     BH._activityOutOfTickets = false;
     BH._outOfTicketsHandling = false;
 
@@ -128,6 +126,7 @@
 
             if (BH.activeAuto === 'all') {
                 BH.allState = 'next';
+                BH._activityOutOfTickets = false;
             } else {
                 BH.stopAuto();
                 BH.setMsg('⚠ Hết vé — dừng bot');
@@ -156,7 +155,6 @@
         const template = BH.getTemplate(BH.activeAuto);
         if (!template) return;
 
-        // Check popup
         if (BH.detectPopup && !BH.navigationPending && !BH._outOfTicketsHandling) {
             const popup = BH.detectPopup();
 
@@ -182,7 +180,6 @@
 
         if (BH._activityOutOfTickets) return;
 
-        // Check screen — navigate nếu ở màn chính
         if (BH.screens && Object.keys(BH.screens).length > 0 && !BH.navigationPending) {
             const screen = BH.detectScreen();
             BH.currentScreen = screen;
@@ -210,7 +207,6 @@
             }
         }
 
-        // Chạy flow
         const flowHandler = BH.FLOW_TYPES[template.flow.type];
         if (!flowHandler) {
             BH.setMsg('Flow type không hỗ trợ: ' + template.flow.type);
@@ -287,7 +283,6 @@
     function runAllContentTick() {
         if (!BH.allContentRunning) return;
 
-        // Popup check
         if (BH.detectPopup && !BH.navigationPending && !BH._outOfTicketsHandling) {
             const popup = BH.detectPopup();
 
@@ -313,7 +308,8 @@
         }
 
         if (BH.navigationPending) return;
-        if (BH._outOfTicketsHandling || BH._activityOutOfTickets) return;
+        if (BH._outOfTicketsHandling) return;
+        if (BH._activityOutOfTickets) return;
 
         const currentActivity = BH.allContentQueue[BH.allContentIndex];
         if (!currentActivity) {
@@ -340,7 +336,6 @@
                         return;
                     }
 
-                    // Đã vào đúng màn → set allCurrentActivity
                     BH.allCurrentActivity = currentActivity;
                     if (BH.render) BH.render();
 
@@ -404,13 +399,14 @@
             const template = BH.getTemplate(templateId);
 
             if (!template) {
-                BH.setMsg('⚠ Không có template cho ' + currentActivity);
+                BH.setMsg('⚠ Không có template ' + templateId);
                 BH.allState = 'next';
                 return;
             }
 
             const flowHandler = BH.FLOW_TYPES[template.flow.type];
             if (!flowHandler) {
+                BH.setMsg('⚠ Không có flow ' + template.flow.type);
                 BH.allState = 'next';
                 return;
             }
@@ -424,7 +420,6 @@
                 stepHandler.action(step, clickDelay);
             });
 
-            // Next khi ở màn chính liên tục 10s
             if (BH.detectScreen() === 'main') {
                 if (!BH._mainDetectedAt) {
                     BH._mainDetectedAt = BH.rt.now();
@@ -455,6 +450,7 @@
             BH._outOfTicketsHandling = false;
             BH.lastActionTime = BH.rt.now();
             BH.setMsg('→ ' + BH.allContentQueue[BH.allContentIndex]);
+            if (BH.render) BH.render();
             return;
         }
     }
@@ -491,9 +487,6 @@
         BH.checkTimerId = BH.rt.setInterval(BH.doCheck, SCAN_INTERVAL);
 
         BH.doCheck();
-
-        const options = BH.loadTemplateOptions(templateId);
-        const clickDelay = options.clickDelay || template.defaultClickDelay || 500;
 
         BH.overlayState = 'compact';
 
