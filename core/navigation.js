@@ -1,6 +1,5 @@
 // core/navigation.js
 // Điều hướng giữa các màn hình.
-// Click 3 nút: "thấy là click", không async verify.
 
 (function (global) {
     'use strict';
@@ -53,7 +52,6 @@
 
         BH.setMsg('Click icon ' + activityId);
 
-        // Chờ 2s → check text màn
         BH.rt.setTimeout(function () {
             if (!map.text || !BH.getScreenRegion(map.text)) {
                 if (callback) callback(true);
@@ -100,9 +98,8 @@
     };
 
     // =========================================================
-    // CLICK SEQUENCE — "thấy là click", không async verify
+    // CLICK SEQUENCE — "thấy là click"
     // =========================================================
-    // Click 1 → chờ 2s → click 2 → chờ 2s → click 3 → chờ 2s → callback
 
     BH.doClickSequence = function (regionIds, callback) {
         let index = 0;
@@ -114,22 +111,20 @@
             }
 
             const regionId = regionIds[index];
-            index++;
 
             if (!BH.getScreenRegion(regionId)) {
                 BH.setMsg('⚠ Chưa chụp ' + regionId + ' — skip');
+                index++;
                 BH.rt.setTimeout(next, 500);
                 return;
             }
 
-            // Thấy region → click
             if (BH.matchRegion(regionId)) {
                 BH.clickRegion(regionId);
-                BH.setMsg('Click ' + index + '/' + regionIds.length + ': ' + regionId);
+                BH.setMsg('Click ' + (index + 1) + '/' + regionIds.length + ': ' + regionId);
+                index++;
                 BH.rt.setTimeout(next, 2000);
             } else {
-                // Chưa thấy → chờ 500ms → check lại
-                index--;  // giữ nguyên index
                 BH.rt.setTimeout(next, 500);
             }
         }
@@ -137,7 +132,6 @@
         next();
     };
 
-    // Wrapper
     BH.doWBClicks = function (callback) {
         BH.doClickSequence(['wb_click1', 'wb_click2', 'wb_click3'], callback);
     };
@@ -151,8 +145,11 @@
     };
 
     // =========================================================
-    // HANDLE OUT OF TICKETS
+    // HANDLE OUT OF TICKETS — sync cơ bản
     // =========================================================
+    // ESC 1 lần → chờ 3s → check màn chính.
+    // Chưa về → ESC lần 2 → chờ 3s → ...
+    // Tối đa 5 lần.
 
     BH.handleOutOfTickets = function (callback) {
         BH.setMsg('⚠ Hết vé — ESC để về màn chính');
@@ -160,34 +157,35 @@
         let escCount = 0;
         const maxEsc = 5;
 
-        function doEsc() {
+        function step() {
             if (escCount >= maxEsc) {
                 if (callback) callback(false, 'ESC quá nhiều lần');
                 return;
             }
 
+            if (BH.isMainScreen()) {
+                BH.setMsg('✓ Đã về màn chính');
+                if (callback) callback(true);
+                return;
+            }
+
             escCount++;
 
+            // Nếu có popup leave → click Yes
             if (BH.matchRegion('popup_leave')) {
                 if (BH.getScreenRegion('popup_leave_yes')) {
                     BH.clickRegion('popup_leave_yes');
-                    BH.setMsg('Click Yes thoát popup');
+                    BH.setMsg('Click Yes thoát popup (lần ' + escCount + ')');
                 }
             } else {
                 BH.dispatchKeyPress('Escape');
                 BH.setMsg('ESC lần ' + escCount);
             }
 
-            BH.rt.setTimeout(function () {
-                if (BH.isMainScreen()) {
-                    if (callback) callback(true);
-                    return;
-                }
-                doEsc();
-            }, 3000);
+            BH.rt.setTimeout(step, 3000);
         }
 
-        doEsc();
+        step();
     };
 
     // =========================================================

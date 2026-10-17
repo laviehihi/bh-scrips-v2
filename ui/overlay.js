@@ -289,6 +289,8 @@
 
         el.innerHTML = '';
 
+        const ver = BH.BOT_VERSION || '2.x';
+
         const header = document.createElement('div');
         Object.assign(header.style, {
             display: 'flex',
@@ -300,7 +302,7 @@
         });
         header.innerHTML = `
             <span style="color:#fff;font-weight:700;font-size:${12 * scale}px;letter-spacing:.3px;">BH BOT</span>
-            <span style="color:#777;font-size:${10 * scale}px;">v2.4</span>
+            <span style="color:#777;font-size:${10 * scale}px;">v${ver}</span>
         `;
         el.appendChild(header);
 
@@ -629,7 +631,7 @@
     }
 
     // =========================================================
-    // RENDER SETUP PANEL (đang setup nút template)
+    // RENDER SETUP PANEL
     // =========================================================
 
     function renderSetupPanel() {

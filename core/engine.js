@@ -30,6 +30,10 @@
     BH._mainDetectedAt = 0;
     BH._extraClicksRunning = false;
 
+    // Flag: activity hiện tại đã hết vé → skip flow
+    BH._activityOutOfTickets = false;
+    BH._outOfTicketsHandling = false;
+
     // =========================================================
     // RESET RUNTIME STATE
     // =========================================================
@@ -42,6 +46,8 @@
         BH.waitStepDone = {};
         BH._mainDetectedAt = 0;
         BH._extraClicksRunning = false;
+        BH._activityOutOfTickets = false;
+        BH._outOfTicketsHandling = false;
 
         if (BH.clearPendingClick) {
             BH.clearPendingClick();
@@ -109,6 +115,29 @@
     };
 
     // =========================================================
+    // HANDLE OUT OF TICKETS — chung
+    // =========================================================
+
+    function startOutOfTicketsHandling() {
+        if (BH._outOfTicketsHandling) return;
+        BH._outOfTicketsHandling = true;
+        BH._activityOutOfTickets = true;
+
+        BH.handleOutOfTickets(function (success) {
+            BH._outOfTicketsHandling = false;
+
+            if (BH.activeAuto === 'all') {
+                // All Content → next activity
+                BH.allState = 'next';
+            } else {
+                // Single template → dừng bot
+                BH.stopAuto();
+                BH.setMsg('⚠ Hết vé — dừng bot');
+            }
+        });
+    }
+
+    // =========================================================
     // DO CHECK
     // =========================================================
 
@@ -129,13 +158,12 @@
         const template = BH.getTemplate(BH.activeAuto);
         if (!template) return;
 
-        if (BH.detectPopup && !BH.navigationPending) {
+        // Check popup
+        if (BH.detectPopup && !BH.navigationPending && !BH._outOfTicketsHandling) {
             const popup = BH.detectPopup();
 
             if (popup === 'outOfTickets') {
-                BH.handleOutOfTickets(function (success) {
-                    if (!success) BH.stopAuto();
-                });
+                startOutOfTicketsHandling();
                 return;
             }
 
@@ -154,6 +182,10 @@
             }
         }
 
+        // Đang xử lý hết vé → không chạy flow
+        if (BH._activityOutOfTickets) return;
+
+        // Check screen — navigate nếu ở màn chính
         if (BH.screens && Object.keys(BH.screens).length > 0 && !BH.navigationPending) {
             const screen = BH.detectScreen();
             BH.currentScreen = screen;
@@ -181,6 +213,7 @@
             }
         }
 
+        // Chạy flow
         const flowHandler = BH.FLOW_TYPES[template.flow.type];
         if (!flowHandler) {
             BH.setMsg('Flow type không hỗ trợ: ' + template.flow.type);
@@ -237,6 +270,8 @@
         BH.allState = 'navigate';
         BH._mainDetectedAt = 0;
         BH._extraClicksRunning = false;
+        BH._activityOutOfTickets = false;
+        BH._outOfTicketsHandling = false;
 
         BH.activeAuto = 'all';
         BH.lastActionTime = BH.rt.now();
@@ -255,15 +290,13 @@
     function runAllContentTick() {
         if (!BH.allContentRunning) return;
 
-        if (BH.detectPopup && !BH.navigationPending) {
+        // Popup check
+        if (BH.detectPopup && !BH.navigationPending && !BH._outOfTicketsHandling) {
             const popup = BH.detectPopup();
 
             if (popup === 'outOfTickets') {
-                BH.handleOutOfTickets(function (success) {
-                    if (!success) {
-                        BH.allState = 'next';
-                    }
-                });
+                BH.setMsg('⚠ ' + BH.allCurrentActivity + ' hết vé');
+                startOutOfTicketsHandling();
                 return;
             }
 
@@ -283,6 +316,9 @@
         }
 
         if (BH.navigationPending) return;
+
+        // Đang xử lý hết vé → chờ
+        if (BH._outOfTicketsHandling || BH._activityOutOfTickets) return;
 
         const currentActivity = BH.allContentQueue[BH.allContentIndex];
         if (!currentActivity) {
@@ -410,6 +446,8 @@
             BH.allState = 'navigate';
             BH._mainDetectedAt = 0;
             BH._extraClicksRunning = false;
+            BH._activityOutOfTickets = false;
+            BH._outOfTicketsHandling = false;
             BH.lastActionTime = BH.rt.now();
             BH.setMsg('→ ' + BH.allCurrentActivity);
             if (BH.render) BH.render();
@@ -474,6 +512,8 @@
         BH.navigationPending = false;
         BH._mainDetectedAt = 0;
         BH._extraClicksRunning = false;
+        BH._activityOutOfTickets = false;
+        BH._outOfTicketsHandling = false;
 
         if (BH.checkTimerId !== null) {
             BH.rt.clearInterval(BH.checkTimerId);
