@@ -1,6 +1,7 @@
 // ui/overlay.js
 // Overlay chính — compact / expanded / setup
 // Auto-scale theo window size
+// Compact: màu theo trạng thái (xanh chạy / vàng chọn / xám chưa)
 
 (function (global) {
     'use strict';
@@ -32,6 +33,19 @@
         const scale = getOverlayScale();
         el.style.fontSize = (11 * scale) + 'px';
         return scale;
+    }
+
+    // =========================================================
+    // STATUS COLOR
+    // =========================================================
+
+    function getStatusColor() {
+        // Đang chạy → xanh
+        if (BH.activeAuto) return '#70e0a8';
+        // Đã chọn template (có activeTemplateId) → vàng
+        if (BH.activeTemplateId) return '#ffaa33';
+        // Chưa chọn → xám
+        return '#666';
     }
 
     // =========================================================
@@ -143,7 +157,9 @@
         const scale = applyScale(el);
         el.style.width = 'auto';
         el.style.padding = (6 * scale) + 'px ' + (10 * scale) + 'px';
-        el.style.borderColor = 'rgba(255,255,255,0.12)';
+
+        const statusColor = getStatusColor();
+        el.style.borderColor = statusColor;
 
         el.innerHTML = '';
 
@@ -156,18 +172,18 @@
             whiteSpace: 'nowrap'
         });
 
-        const templateId = BH.activeTemplateId || BH.loadActiveTemplate();
-        const template = BH.getTemplate(templateId);
+        const templateId = BH.activeTemplateId || null;
+        const template = templateId ? BH.getTemplate(templateId) : null;
 
         const dot = document.createElement('span');
         dot.textContent = '●';
-        dot.style.color = BH.activeAuto ? '#70e0a8' : '#666';
+        dot.style.color = statusColor;
         dot.style.fontWeight = '700';
         row.appendChild(dot);
 
         const nameSpan = document.createElement('span');
         nameSpan.textContent = template ? template.name : 'No template';
-        nameSpan.style.color = BH.activeAuto ? '#70e0a8' : '#ff9966';
+        nameSpan.style.color = statusColor;
         nameSpan.style.fontWeight = '700';
         row.appendChild(nameSpan);
 
@@ -195,11 +211,26 @@
         speedSpan.style.borderLeft = '1px solid rgba(255,255,255,.15)';
         row.appendChild(speedSpan);
 
-        const expandBtn = makeBtn('▼', function () {
-            BH.overlayState = 'expanded';
-            BH.render();
-        }, { padding: '2px 6px', fontSize: '10px' });
-        row.appendChild(expandBtn);
+        // Nút đóng/mở: nếu đang chạy → × (stop + mở), nếu không → ▼ (mở)
+        const isRunning = BH.activeAuto !== null;
+
+        if (isRunning) {
+            row.appendChild(makeBtn('×', function () {
+                BH.stopAuto();
+                BH.overlayState = 'expanded';
+                BH.render();
+            }, {
+                padding: '2px 6px',
+                fontSize: '12px',
+                color: '#ff6666',
+                border: '1px solid #ff6666'
+            }));
+        } else {
+            row.appendChild(makeBtn('▼', function () {
+                BH.overlayState = 'expanded';
+                BH.render();
+            }, { padding: '2px 6px', fontSize: '10px' }));
+        }
 
         el.appendChild(row);
     }
@@ -230,7 +261,7 @@
         });
         header.innerHTML = `
             <span style="color:#fff;font-weight:700;font-size:${12 * scale}px;letter-spacing:.3px;">BH BOT</span>
-            <span style="color:#777;font-size:${10 * scale}px;">v2.2</span>
+            <span style="color:#777;font-size:${10 * scale}px;">v2.3</span>
         `;
         el.appendChild(header);
 

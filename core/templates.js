@@ -9,12 +9,13 @@
     BH.TEMPLATES = {
 
         // =========================================================
-        // RERUN
+        // RERUN — Hotkey 1
         // =========================================================
 
         rerun: {
             id: 'rerun',
             name: 'Auto Rerun',
+            hotkey: '1',
             description: 'Click nút Rerun khi hiện',
             defaultClickDelay: 500,
             steps: [
@@ -34,12 +35,13 @@
         },
 
         // =========================================================
-        // PVP
+        // PVP — Hotkey 2
         // =========================================================
 
         pvp: {
             id: 'pvp',
             name: 'Auto PvP',
+            hotkey: '2',
             description: 'Auto đánh PvP',
             defaultClickDelay: 500,
             steps: [
@@ -87,12 +89,13 @@
         },
 
         // =========================================================
-        // TG
+        // TG — Hotkey 3
         // =========================================================
 
         tg: {
             id: 'tg',
             name: 'Auto TG',
+            hotkey: '3',
             description: 'Auto đánh TG',
             defaultClickDelay: 500,
             steps: [
@@ -133,12 +136,14 @@
         },
 
         // =========================================================
-        // WB
+        // WB — Hotkey 4 (solo), 5 (team)
         // =========================================================
 
         wb: {
             id: 'wb',
             name: 'Auto WB',
+            hotkey: '4',
+            hotkeyTeam: '5',
             description: 'Auto đánh World Boss (solo + team)',
             defaultClickDelay: 500,
 
@@ -237,12 +242,13 @@
         },
 
         // =========================================================
-        // INVA
+        // INVA — Hotkey 6
         // =========================================================
 
         inva: {
             id: 'inva',
             name: 'Auto Inva',
+            hotkey: '6',
             description: 'Auto đánh Inva — bật auto, chạy X giây, ESC',
             defaultClickDelay: 500,
 
@@ -307,12 +313,13 @@
         },
 
         // =========================================================
-        // CUSTOM
+        // CUSTOM — Hotkey 7
         // =========================================================
 
         custom: {
             id: 'custom',
             name: 'Rules',
+            hotkey: '7',
             description: 'Tự thêm rules — flex cho mọi tình huống',
             defaultClickDelay: 500,
             steps: [
@@ -345,6 +352,28 @@
         return Object.keys(BH.TEMPLATES).map(function (id) {
             return BH.TEMPLATES[id];
         });
+    };
+
+    // =========================================================
+    // HOTKEY LOOKUP
+    // =========================================================
+
+    BH.getTemplateByHotkey = function (key) {
+        const all = BH.getAllTemplates();
+
+        for (let i = 0; i < all.length; i++) {
+            const t = all[i];
+
+            // WB có 2 hotkey
+            if (t.hotkey === key) {
+                return { template: t, isTeam: false };
+            }
+            if (t.hotkeyTeam === key) {
+                return { template: t, isTeam: true };
+            }
+        }
+
+        return null;
     };
 
 })(window);

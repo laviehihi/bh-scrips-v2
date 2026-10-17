@@ -1,5 +1,5 @@
 // ui/template-picker.js
-// Dropdown chọn template
+// Dropdown chọn template — có hiển thị hotkey
 
 (function (global) {
     'use strict';
@@ -48,9 +48,31 @@
         const templates = BH.getAllTemplates();
         for (let i = 0; i < templates.length; i++) {
             const t = templates[i];
+
+            // WB có 2 option: solo (hotkey 4), team (hotkey 5)
+            if (t.id === 'wb') {
+                const optSolo = document.createElement('option');
+                optSolo.value = 'wb_solo';
+                optSolo.textContent = '[4] ' + t.name + ' (Solo)';
+                if (templateId === 'wb' && BH.loadTemplateOptions('wb').partySize === 1) {
+                    optSolo.selected = true;
+                }
+                select.appendChild(optSolo);
+
+                const optTeam = document.createElement('option');
+                optTeam.value = 'wb_team';
+                optTeam.textContent = '[5] ' + t.name + ' (Team)';
+                if (templateId === 'wb' && BH.loadTemplateOptions('wb').partySize > 1) {
+                    optTeam.selected = true;
+                }
+                select.appendChild(optTeam);
+                continue;
+            }
+
             const opt = document.createElement('option');
             opt.value = t.id;
-            opt.textContent = t.name;
+            const hk = t.hotkey ? '[' + t.hotkey + '] ' : '';
+            opt.textContent = hk + t.name;
             if (t.id === templateId) opt.selected = true;
             select.appendChild(opt);
         }
@@ -60,10 +82,30 @@
 
             if (BH.activeAuto) BH.stopAuto();
 
-            BH.activeTemplateId = newId;
-            BH.saveActiveTemplate(newId);
+            if (newId === 'wb_solo') {
+                BH.activeTemplateId = 'wb';
+                BH.saveActiveTemplate('wb');
 
-            BH.setMsg('Template: ' + BH.getTemplate(newId).name);
+                const opts = BH.loadTemplateOptions('wb');
+                opts.partySize = 1;
+                BH.saveTemplateOptions('wb', opts);
+            } else if (newId === 'wb_team') {
+                BH.activeTemplateId = 'wb';
+                BH.saveActiveTemplate('wb');
+
+                const opts = BH.loadTemplateOptions('wb');
+                if (!opts.partySize || opts.partySize === 1) {
+                    opts.partySize = 2;
+                }
+                BH.saveTemplateOptions('wb', opts);
+            } else {
+                BH.activeTemplateId = newId;
+                BH.saveActiveTemplate(newId);
+            }
+
+            BH.loadCalibration(BH.activeTemplateId);
+
+            BH.setMsg('Template: ' + BH.getTemplate(BH.activeTemplateId).name);
             BH.render();
         });
 

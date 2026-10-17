@@ -26,20 +26,12 @@
     // =========================================================
 
     function resetRuntimeState() {
-        // Inva state
         BH.invaAutoCheckedAt = 0;
         BH.invaEscSent = false;
-
-        // Cooldown (nếu có dùng)
         BH.clickCooldownUntil = 0;
-
-        // Keypress state (nếu có dùng)
         BH.keypressSent = {};
-
-        // Wait state (nếu có dùng)
         BH.waitStepDone = {};
 
-        // Pending click
         if (BH.clearPendingClick) {
             BH.clearPendingClick();
         }
@@ -80,6 +72,34 @@
     };
 
     // =========================================================
+    // CHECK TEMPLATE READY (đã setup đủ step chưa)
+    // =========================================================
+
+    BH.isTemplateReady = function (templateId) {
+        const template = BH.getTemplate(templateId);
+        if (!template) return false;
+
+        BH.loadCalibration(templateId);
+
+        // Check ít nhất 1 step required đã calibrated
+        for (let i = 0; i < template.steps.length; i++) {
+            const step = template.steps[i];
+            if (step.required && step.calibrated) {
+                return true;
+            }
+        }
+
+        // Hoặc nếu không có required → check có step nào calibrated
+        for (let i = 0; i < template.steps.length; i++) {
+            if (template.steps[i].calibrated) {
+                return true;
+            }
+        }
+
+        return false;
+    };
+
+    // =========================================================
     // DO CHECK
     // =========================================================
 
@@ -87,7 +107,6 @@
         if (!BH.activeAuto) return;
         if (BH.isSetupLock) return;
 
-        // Cooldown sau click
         if (BH.clickCooldownUntil && BH.rt.now() < BH.clickCooldownUntil) {
             return;
         }
@@ -154,7 +173,6 @@
 
         BH.loadCalibration(templateId);
 
-        // Reset state trước khi bắt đầu
         resetRuntimeState();
 
         BH.activeAuto = templateId;
@@ -169,9 +187,8 @@
         const options = BH.loadTemplateOptions(templateId);
         const clickDelay = options.clickDelay || template.defaultClickDelay || 500;
 
-        if (BH.overlayState === 'expanded') {
-            BH.overlayState = 'compact';
-        }
+        // Overlay → compact
+        BH.overlayState = 'compact';
 
         BH.setMsg(template.name + ' started · scan 0.3s · click delay ' + (clickDelay / 1000) + 's');
 
@@ -194,7 +211,6 @@
             BH.autoStopTimerId = null;
         }
 
-        // Reset state khi stop
         resetRuntimeState();
 
         BH.setMsg(stopped.toUpperCase() + ' stopped');
@@ -208,6 +224,62 @@
         } else {
             BH.startAuto(templateId);
         }
+    };
+
+    // =========================================================
+    // HOTKEY TOGGLE
+    // =========================================================
+
+    BH.toggleByHotkey = function (key) {
+        const found = BH.getTemplateByHotkey(key);
+        if (!found) return;
+
+        const template = found.template;
+        const isTeam = found.isTeam;
+
+        // Nếu đang setup → thoát setup trước
+        if (BH.setupMode) {
+            BH.exitSetupMode();
+        }
+
+        // Nếu đang chạy template này → tắt
+        if (BH.activeAuto === template.id) {
+            BH.stopAuto();
+            return;
+        }
+
+        // Nếu đang chạy template khác → chuyển
+        if (BH.activeAuto) {
+            BH.stopAuto();
+        }
+
+        // Set activeTemplateId
+        BH.activeTemplateId = template.id;
+        BH.saveActiveTemplate(template.id);
+
+        // WB: set partySize theo hotkey
+        if (template.id === 'wb') {
+            const opts = BH.loadTemplateOptions('wb');
+            if (isTeam) {
+                // Nếu partySize đang là 1 → set 2 (mặc định team)
+                if (!opts.partySize || opts.partySize === 1) {
+                    opts.partySize = 2;
+                }
+            } else {
+                opts.partySize = 1;
+            }
+            BH.saveTemplateOptions('wb', opts);
+        }
+
+        // Check đã setup chưa
+        if (!BH.isTemplateReady(template.id)) {
+            BH.setMsg('⚠ ' + template.name + ' chưa setup');
+            if (BH.render) BH.render();
+            return;
+        }
+
+        // Bật auto
+        BH.startAuto(template.id);
     };
 
     // =========================================================
