@@ -1,49 +1,56 @@
 // main.user.js
+// Entry point — Bit Heroes Bot v2
 
 // ==UserScript==
 // @name         Bit Heroes - Auto Bot v2
 // @namespace    http://tampermonkey.net/
-// @version      2.4.20
-// @description  Auto bot cho Bit Heroes
+// @version      2.3.1
+// @description  Auto bot cho Bit Heroes — template-based, click overlay
 // @match        *://*.kongregate.com/*
 // @match        *://*.bitheroesgame.com/*
 // @run-at       document-start
 // @grant        none
-// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.4.20/core/real-time.js
-// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.4.20/core/utils.js
-// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.4.20/core/pixel.js
-// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.4.20/core/click.js
-// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.4.20/core/storage.js
-// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.4.20/core/speed-hack.js
-// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.4.20/core/screens.js
-// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.4.20/core/navigation.js
-// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.4.20/core/templates.js
-// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.4.20/core/step-types.js
-// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.4.20/core/flow-types.js
-// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.4.20/core/engine.js
-// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.4.20/ui/help.js
-// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.4.20/ui/marker.js
-// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.4.20/ui/magnifier.js
-// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.4.20/ui/setup.js
-// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.4.20/ui/screens-ui.js
-// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.4.20/ui/screens-panel.js
-// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.4.20/ui/overlay.js
-// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.4.20/ui/template-picker.js
+// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.3.1/core/real-time.js
+// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.3.1/core/utils.js
+// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.3.1/core/pixel.js
+// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.3.1/core/click.js
+// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.3.1/core/storage.js
+// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.3.1/core/speed-hack.js
+// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.3.1/core/templates.js
+// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.3.1/core/step-types.js
+// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.3.1/core/flow-types.js
+// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.3.1/core/engine.js
+// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.3.1/ui/help.js
+// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.3.1/ui/marker.js
+// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.3.1/ui/magnifier.js
+// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.3.1/ui/setup.js
+// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.3.1/ui/overlay.js
+// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.3.1/ui/template-picker.js
 // ==/UserScript==
 
 (function () {
     'use strict';
 
     try {
-        Object.defineProperty(document, 'hasFocus', { value: function () { return true; }, configurable: true, writable: true });
+        Object.defineProperty(document, 'hasFocus', {
+            value: function () { return true; },
+            configurable: true,
+            writable: true
+        });
     } catch (e) { }
 
     try {
-        Object.defineProperty(document, 'hidden', { get: function () { return false; }, configurable: true });
+        Object.defineProperty(document, 'hidden', {
+            get: function () { return false; },
+            configurable: true
+        });
     } catch (e) { }
 
     try {
-        Object.defineProperty(document, 'visibilityState', { get: function () { return 'visible'; }, configurable: true });
+        Object.defineProperty(document, 'visibilityState', {
+            get: function () { return 'visible'; },
+            configurable: true
+        });
     } catch (e) { }
 
     ['visibilitychange', 'webkitvisibilitychange', 'blur', 'focusout', 'pagehide']
@@ -62,18 +69,27 @@
     const originalGetContext = HTMLCanvasElement.prototype.getContext;
 
     HTMLCanvasElement.prototype.getContext = function (type, attrs) {
-        if (type === 'webgl' || type === 'webgl2' || type === 'experimental-webgl') {
-            attrs = Object.assign({}, attrs || {}, { preserveDrawingBuffer: true });
+        if (
+            type === 'webgl' ||
+            type === 'webgl2' ||
+            type === 'experimental-webgl'
+        ) {
+            attrs = Object.assign({}, attrs || {}, {
+                preserveDrawingBuffer: true
+            });
         }
         return originalGetContext.call(this, type, attrs);
     };
 
     window.__BH__ = window.__BH__ || {};
-    window.__BH__.BOT_VERSION = '2.4.20';
 
     window.__BH__.togglePassthrough = function () {
         window.__BH__.passthrough = !window.__BH__.passthrough;
-        window.__BH__.setMsg(window.__BH__.passthrough ? '🔓 Passthrough ON' : '🔒 Passthrough OFF');
+        window.__BH__.setMsg(
+            window.__BH__.passthrough
+                ? '🔓 Passthrough ON'
+                : '🔒 Passthrough OFF'
+        );
     };
 
     document.addEventListener('keydown', function (e) {
@@ -115,7 +131,7 @@
             return;
         }
 
-        if (e.key >= '1' && e.key <= '8') {
+        if (e.key >= '1' && e.key <= '7') {
             e.preventDefault();
             e.stopImmediatePropagation();
             window.__BH__.toggleByHotkey(e.key);
@@ -127,13 +143,11 @@
     function init() {
         window.__BH__.overlayState = 'compact';
 
-        if (window.__BH__.loadScreens) window.__BH__.loadScreens();
-
         window.__BH__.activeTemplateId = window.__BH__.loadActiveTemplate();
         window.__BH__.loadCalibration(window.__BH__.activeTemplateId);
         window.__BH__.render();
 
-        console.log('[BH Bot v2.4.20] Loaded');
+        console.log('[BH Bot v2.3.1] Loaded');
     }
 
     if (document.readyState === 'loading') {

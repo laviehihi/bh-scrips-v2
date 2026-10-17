@@ -1,5 +1,5 @@
 // core/click.js
-// Dispatch click event chain + reset hover + key press
+// Dispatch click event chain + reset hover + click flash + key press
 
 (function (global) {
     'use strict';
@@ -157,27 +157,20 @@
     };
 
     // =========================================================
-    // RESET HOVER — click vào góc phải trên (tránh UI)
+    // RESET HOVER
     // =========================================================
 
     BH.resetHover = function () {
         const canvas = BH.getCanvas();
         if (!canvas) return;
 
-        // Góc phải trên
-        const bufX = canvas.width - 20;
-        const bufY = canvas.height - 20;
-
-        const pos = BH.bufferToClient(canvas, bufX, bufY);
+        const pos = BH.bufferToClient(
+            canvas,
+            BH.RESET_POINT_X,
+            BH.RESET_POINT_Y
+        );
 
         BH.dispatchFullClick(canvas, pos.clientX, pos.clientY);
     };
-
-    // =========================================================
-    // RESET POINT (giữ cho tương thích, nhưng resetHover dùng góc phải trên)
-    // =========================================================
-
-    BH.RESET_POINT_X = 20;
-    BH.RESET_POINT_Y = 20;
 
 })(window);

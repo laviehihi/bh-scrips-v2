@@ -8,7 +8,10 @@
 
     BH.FLOW_TYPES = {};
 
+    // =========================================================
     // SEQUENTIAL
+    // =========================================================
+
     BH.FLOW_TYPES.sequential = function (template, onMatch) {
         const order = template.flow.order || [];
 
@@ -29,7 +32,10 @@
         return false;
     };
 
+    // =========================================================
     // WB
+    // =========================================================
+
     BH.FLOW_TYPES.wb = function (template, onMatch) {
         const options = BH.loadTemplateOptions(template.id);
         const partySize = options.partySize || 1;
@@ -49,12 +55,16 @@
 
         if (startStep && startStep.calibrated) {
             const handler = BH.STEP_TYPES[startStep.type || 'click'];
-            if (handler && handler.check(startStep)) startVisible = true;
+            if (handler && handler.check(startStep)) {
+                startVisible = true;
+            }
         }
 
         if (readyStep && readyStep.calibrated) {
             const handler = BH.STEP_TYPES[readyStep.type || 'click'];
-            if (handler && handler.check(readyStep)) readyVisible = true;
+            if (handler && handler.check(readyStep)) {
+                readyVisible = true;
+            }
         }
 
         if (!startVisible && !readyVisible) {
@@ -64,6 +74,7 @@
         const currentPlayers = BH.countWBPlayers(template);
         BH.wbCurrentPlayers = currentPlayers;
 
+        // Update overlay mỗi lần đếm
         updateWBCountUI();
 
         if (currentPlayers < partySize) {
@@ -73,6 +84,10 @@
 
         return checkNonSlotSteps(template, onMatch);
     };
+
+    // =========================================================
+    // UPDATE WB COUNT UI
+    // =========================================================
 
     function updateWBCountUI() {
         if (BH.overlayState !== 'compact') return;
@@ -110,7 +125,10 @@
         return false;
     }
 
+    // =========================================================
     // COUNT WB PLAYERS
+    // =========================================================
+
     BH.countWBPlayers = function (template) {
         const canvas = BH.getCanvas();
         if (!canvas || canvas.width === 0 || canvas.height === 0) return 0;
@@ -136,12 +154,20 @@
         return count;
     };
 
+    // =========================================================
     // INVA
+    // =========================================================
+
     BH.FLOW_TYPES.inva = function (template, onMatch) {
         const options = BH.loadTemplateOptions(template.id);
         const duration = options.duration || 10;
 
-        // Phase 1
+        if (BH.invaAutoCheckedAt == null) {
+            BH.invaAutoCheckedAt = 0;
+            BH.invaEscSent = false;
+        }
+
+        // Phase 1: chưa check auto
         if (!BH.invaAutoCheckedAt) {
             const beforeAuto = ['start', 'confirmTeam', 'yesNo'];
 
@@ -161,11 +187,10 @@
 
                     onMatch(step);
 
+                    // Đổi 1s → 2s
                     if (step.id === 'confirmTeam' || step.id === 'yesNo') {
                         BH.rt.setTimeout(function () {
-                            const isThisTemplate = (BH.activeAuto === template.id);
-                            const isInvasionInAll = (BH.activeAuto === 'all' && BH.allCurrentActivity === 'invasion');
-                            if (isThisTemplate || isInvasionInAll) {
+                            if (BH.activeAuto === template.id) {
                                 checkAutoAndStartTimer(template);
                             }
                         }, 2000);
@@ -179,18 +204,6 @@
         }
 
         // Phase 2: đếm X giây
-        const returnHomeStep = BH.getStep(template, 'returnHome');
-
-        if (returnHomeStep && returnHomeStep.calibrated) {
-            const handler = BH.STEP_TYPES[returnHomeStep.type || 'click'];
-            if (handler && handler.check(returnHomeStep)) {
-                onMatch(returnHomeStep);
-                BH.invaAutoCheckedAt = 0;
-                BH.invaEscSent = false;
-                return true;
-            }
-        }
-
         const elapsed = BH.rt.now() - BH.invaAutoCheckedAt;
 
         if (elapsed < duration * 1000) {
@@ -199,20 +212,22 @@
             return false;
         }
 
-        // Phase 3: ESC
+        // Phase 3: hết X giây → ESC
         if (!BH.invaEscSent) {
             BH.dispatchKeyPress('Escape');
             BH.invaEscSent = true;
-            BH.setMsg('Đã gửi ESC');
+            BH.setMsg('Đã gửi ESC — chờ popup');
 
             BH.rt.setTimeout(function () {
-                if (BH.activeAuto) BH.doCheck();
+                if (BH.activeAuto === template.id) {
+                    BH.doCheck();
+                }
             }, 1000);
 
             return true;
         }
 
-        // Phase 4
+        // Phase 4: sau ESC
         const afterEsc = ['yesLeave', 'returnHome'];
 
         for (let i = 0; i < afterEsc.length; i++) {
@@ -240,6 +255,10 @@
         return false;
     };
 
+    // =========================================================
+    // CHECK AUTO AND START TIMER
+    // =========================================================
+
     function checkAutoAndStartTimer(template) {
         const autoStep = BH.getStep(template, 'autoInGame');
 
@@ -251,8 +270,10 @@
                 BH.clickAtBuf(autoStep.x, autoStep.y);
                 BH.setMsg('Đã bật auto');
             } else {
-                BH.setMsg('Auto đã bật sẵn');
+                BH.setMsg('Auto đã bật sẵn — bắt đầu đếm');
             }
+        } else {
+            BH.setMsg('Auto chưa setup — bỏ qua');
         }
 
         BH.invaAutoCheckedAt = BH.rt.now();
@@ -260,7 +281,10 @@
         if (BH.render) BH.render();
     }
 
+    // =========================================================
     // GET STEP
+    // =========================================================
+
     BH.getStep = function (template, stepId) {
         if (!template || !template.steps) return null;
         for (let i = 0; i < template.steps.length; i++) {

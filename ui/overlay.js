@@ -1,5 +1,7 @@
 // ui/overlay.js
-// Overlay chính — compact / expanded / setup / screens setup
+// Overlay chính — compact / expanded / setup
+// Auto-scale theo window size
+// Compact: màu theo trạng thái (xanh chạy / vàng chọn / xám chưa)
 
 (function (global) {
     'use strict';
@@ -9,7 +11,6 @@
     const OVERLAY_STATES = ['compact', 'expanded', 'hidden'];
 
     BH.overlayState = 'compact';
-    BH.overlayTab = 'basic';
     BH.overlayEl = null;
     BH.lastMsg = '';
     BH.passthrough = false;
@@ -39,8 +40,11 @@
     // =========================================================
 
     function getStatusColor() {
+        // Đang chạy → xanh
         if (BH.activeAuto) return '#70e0a8';
+        // Đã chọn template (có activeTemplateId) → vàng
         if (BH.activeTemplateId) return '#ffaa33';
+        // Chưa chọn → xám
         return '#666';
     }
 
@@ -83,7 +87,7 @@
     // BUTTON HELPER
     // =========================================================
 
-    BH.makeBtn = function (text, onClick, opts) {
+    function makeBtn(text, onClick, opts) {
         opts = opts || {};
 
         const btn = document.createElement('button');
@@ -104,8 +108,7 @@
             transition: 'background .15s',
             pointerEvents: isDisabled ? 'none' : 'auto',
             userSelect: 'none',
-            opacity: isDisabled ? '0.4' : '1',
-            flex: opts.flex || 'initial'
+            opacity: isDisabled ? '0.4' : '1'
         });
 
         if (!isDisabled) {
@@ -123,7 +126,7 @@
         }
 
         return btn;
-    };
+    }
 
     // =========================================================
     // COLOR DOT
@@ -169,35 +172,20 @@
             whiteSpace: 'nowrap'
         });
 
+        const templateId = BH.activeTemplateId || null;
+        const template = templateId ? BH.getTemplate(templateId) : null;
+
         const dot = document.createElement('span');
         dot.textContent = '●';
         dot.style.color = statusColor;
         dot.style.fontWeight = '700';
         row.appendChild(dot);
 
-        // Tên hiển thị
-        let nameText = 'No template';
-
-        if (BH.activeAuto === 'all' && BH.allCurrentActivity) {
-            const idx = (BH.allContentIndex || 0) + 1;
-            const total = (BH.allContentQueue && BH.allContentQueue.length) || 0;
-            const stateLabel = BH.allState || '';
-            nameText = 'All ' + idx + '/' + total + ' · ' + BH.allCurrentActivity + ' · ' + stateLabel;
-        } else {
-            const tid = BH.activeTemplateId || null;
-            const t = tid ? BH.getTemplate(tid) : null;
-            if (t) nameText = t.name;
-        }
-
         const nameSpan = document.createElement('span');
-        nameSpan.textContent = nameText;
+        nameSpan.textContent = template ? template.name : 'No template';
         nameSpan.style.color = statusColor;
         nameSpan.style.fontWeight = '700';
         row.appendChild(nameSpan);
-
-        // WB count
-        const templateId = BH.activeTemplateId || null;
-        const template = templateId ? BH.getTemplate(templateId) : null;
 
         if (template && template.id === 'wb' && BH.activeAuto === 'wb') {
             const countSpan = document.createElement('span');
@@ -223,10 +211,11 @@
         speedSpan.style.borderLeft = '1px solid rgba(255,255,255,.15)';
         row.appendChild(speedSpan);
 
+        // Nút đóng/mở: nếu đang chạy → × (stop + mở), nếu không → ▼ (mở)
         const isRunning = BH.activeAuto !== null;
 
         if (isRunning) {
-            row.appendChild(BH.makeBtn('×', function () {
+            row.appendChild(makeBtn('×', function () {
                 BH.stopAuto();
                 BH.overlayState = 'expanded';
                 BH.render();
@@ -237,46 +226,13 @@
                 border: '1px solid #ff6666'
             }));
         } else {
-            row.appendChild(BH.makeBtn('▼', function () {
+            row.appendChild(makeBtn('▼', function () {
                 BH.overlayState = 'expanded';
                 BH.render();
             }, { padding: '2px 6px', fontSize: '10px' }));
         }
 
         el.appendChild(row);
-    }
-
-    // =========================================================
-    // TAB BAR
-    // =========================================================
-
-    function renderTabBar(el, scale) {
-        const tabBar = document.createElement('div');
-        Object.assign(tabBar.style, {
-            display: 'flex',
-            gap: '2px',
-            marginBottom: (8 * scale) + 'px',
-            borderBottom: '1px solid rgba(255,255,255,.1)',
-            paddingBottom: (4 * scale) + 'px'
-        });
-
-        function makeTab(id, label, color) {
-            const active = BH.overlayTab === id;
-            return BH.makeBtn(label, function () {
-                BH.overlayTab = id;
-                BH.render();
-            }, {
-                bg: active ? 'rgba(142,200,255,0.2)' : undefined,
-                color: active ? color : '#888',
-                border: active ? '1px solid ' + color : '1px solid rgba(255,255,255,0.1)',
-                flex: '1'
-            });
-        }
-
-        tabBar.appendChild(makeTab('basic', 'Basic', '#70e0a8'));
-        tabBar.appendChild(makeTab('screens', 'Screens', '#8ec8ff'));
-
-        el.appendChild(tabBar);
     }
 
     // =========================================================
@@ -292,7 +248,7 @@
 
         el.innerHTML = '';
 
-        const ver = BH.BOT_VERSION || '2.x';
+        const isRunning = BH.activeAuto !== null;
 
         const header = document.createElement('div');
         Object.assign(header.style, {
@@ -305,25 +261,9 @@
         });
         header.innerHTML = `
             <span style="color:#fff;font-weight:700;font-size:${12 * scale}px;letter-spacing:.3px;">BH BOT</span>
-            <span style="color:#777;font-size:${10 * scale}px;">v${ver}</span>
+            <span style="color:#777;font-size:${10 * scale}px;">v2.3</span>
         `;
         el.appendChild(header);
-
-        renderTabBar(el, scale);
-
-        if (BH.overlayTab === 'screens') {
-            renderScreensTab(el, scale);
-        } else {
-            renderBasicTab(el, scale);
-        }
-    }
-
-    // =========================================================
-    // BASIC TAB
-    // =========================================================
-
-    function renderBasicTab(el, scale) {
-        const isRunning = BH.activeAuto !== null;
 
         BH.renderTemplatePicker(el, isRunning);
 
@@ -341,92 +281,6 @@
 
         renderClickDelayPreset(el, template, isRunning, scale);
         renderStartStopTools(el, template, scale);
-        renderLog(el, scale);
-    }
-
-    // =========================================================
-    // SCREENS TAB
-    // =========================================================
-
-    function renderScreensTab(el, scale) {
-        if (BH.screensSetupMode) {
-            BH.renderScreensPanel(el, scale);
-            return;
-        }
-
-        const info = document.createElement('div');
-        Object.assign(info.style, {
-            fontSize: (10 * scale) + 'px',
-            color: '#888',
-            marginBottom: (8 * scale) + 'px',
-            lineHeight: '1.6'
-        });
-
-        const totalDefs = BH.SCREEN_DEFS ? BH.SCREEN_DEFS.length : 0;
-        const savedCount = BH.screens ? Object.keys(BH.screens).length : 0;
-
-        info.innerHTML = `
-            <div style="color:#fff;font-weight:700;font-size:${11 * scale}px;margin-bottom:4px;">
-                Screens (${savedCount}/${totalDefs})
-            </div>
-            <div>Chụp vùng icon, text, popup để bot nhận diện màn hình.</div>
-        `;
-
-        el.appendChild(info);
-
-        if (BH.SCREEN_DEFS) {
-            const groups = {};
-
-            for (const def of BH.SCREEN_DEFS) {
-                if (!groups[def.group]) groups[def.group] = { total: 0, saved: 0 };
-                groups[def.group].total++;
-                if (BH.getScreenRegion(def.id)) groups[def.group].saved++;
-            }
-
-            for (const g in groups) {
-                const data = groups[g];
-                const row = document.createElement('div');
-                Object.assign(row.style, {
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    fontSize: (9 * scale) + 'px',
-                    color: data.saved === data.total ? '#70e0a8' : '#888',
-                    marginBottom: '2px'
-                });
-
-                const label = document.createElement('span');
-                label.textContent = g;
-                row.appendChild(label);
-
-                const count = document.createElement('span');
-                count.textContent = data.saved + '/' + data.total;
-                count.style.fontWeight = '700';
-                row.appendChild(count);
-
-                el.appendChild(row);
-            }
-        }
-
-        const btnRow = document.createElement('div');
-        Object.assign(btnRow.style, {
-            marginTop: (8 * scale) + 'px',
-            paddingTop: (6 * scale) + 'px',
-            borderTop: '1px solid rgba(255,255,255,.1)'
-        });
-
-        btnRow.appendChild(BH.makeBtn('[Setup Screens]', function () {
-            BH.enterScreensSetup();
-        }, {
-            bg: 'rgba(142,200,255,0.2)',
-            color: '#8ec8ff',
-            border: '1px solid #8ec8ff',
-            padding: '4px 8px',
-            fontSize: '10px',
-            flex: '1'
-        }));
-
-        el.appendChild(btnRow);
-
         renderLog(el, scale);
     }
 
@@ -457,7 +311,7 @@
             const v = values[i];
             const isActive = v === current;
 
-            row.appendChild(BH.makeBtn(String(v), function () {
+            row.appendChild(makeBtn(String(v), function () {
                 const opts = BH.loadTemplateOptions(template.id);
                 opts.partySize = v;
                 BH.saveTemplateOptions(template.id, opts);
@@ -474,7 +328,7 @@
     }
 
     // =========================================================
-    // DURATION
+    // DURATION OPTION (Inva)
     // =========================================================
 
     function renderDurationOption(el, template, isRunning, scale) {
@@ -500,7 +354,7 @@
             const v = values[i];
             const isActive = v === current;
 
-            row.appendChild(BH.makeBtn(v + 's', function () {
+            row.appendChild(makeBtn(v + 's', function () {
                 const opts = BH.loadTemplateOptions(template.id);
                 opts.duration = v;
                 BH.saveTemplateOptions(template.id, opts);
@@ -546,7 +400,7 @@
             const isActive = ms === current;
             const lbl = (ms >= 1000) ? (ms / 1000) + 's' : (ms / 1000).toFixed(1) + 's';
 
-            row.appendChild(BH.makeBtn(lbl, function () {
+            row.appendChild(makeBtn(lbl, function () {
                 BH.setTemplateClickDelay(template.id, ms);
             }, {
                 bg: isActive ? 'rgba(112,224,168,0.25)' : undefined,
@@ -580,7 +434,7 @@
         const isRunning = BH.activeAuto === template.id;
 
         if (isRunning) {
-            row.appendChild(BH.makeBtn('[DỪNG]', function () {
+            row.appendChild(makeBtn('[DỪNG]', function () {
                 BH.stopAuto();
             }, {
                 bg: 'rgba(255,153,102,0.2)',
@@ -590,7 +444,7 @@
                 fontSize: '10px'
             }));
         } else {
-            row.appendChild(BH.makeBtn('[BẮT ĐẦU]', function () {
+            row.appendChild(makeBtn('[BẮT ĐẦU]', function () {
                 BH.startAuto(template.id);
             }, {
                 bg: 'rgba(112,224,168,0.2)',
@@ -601,7 +455,7 @@
             }));
         }
 
-        row.appendChild(BH.makeBtn('[Setup]', function () {
+        row.appendChild(makeBtn('[Setup]', function () {
             BH.toggleSetupMode();
         }, {
             disabled: isRunning,
@@ -664,12 +518,12 @@
             txt.style.maxWidth = '120px';
             row.appendChild(txt);
 
-            row.appendChild(BH.makeBtn('▲', function () {
+            row.appendChild(makeBtn('▲', function () {
                 BH.setupCollapsed = false;
                 BH.render();
             }, { padding: '2px 6px', color: '#ffaa33', border: '1px solid #ffaa33' }));
 
-            row.appendChild(BH.makeBtn('×', function () {
+            row.appendChild(makeBtn('×', function () {
                 BH.exitSetupMode();
             }, { padding: '2px 6px', color: '#ff6666', border: '1px solid #ff6666' }));
 
@@ -713,12 +567,12 @@
             marginLeft: '6px'
         });
 
-        btnGroup.appendChild(BH.makeBtn('─', function () {
+        btnGroup.appendChild(makeBtn('─', function () {
             BH.setupCollapsed = true;
             BH.render();
         }, { padding: '1px 6px', color: '#ffaa33', border: '1px solid #ffaa33' }));
 
-        btnGroup.appendChild(BH.makeBtn('×', function () {
+        btnGroup.appendChild(makeBtn('×', function () {
             BH.exitSetupMode();
         }, { padding: '1px 6px', color: '#ff6666', border: '1px solid #ff6666' }));
 
@@ -779,14 +633,14 @@
             flexWrap: 'wrap'
         });
 
-        navRow.appendChild(BH.makeBtn('← Trước', function () {
+        navRow.appendChild(makeBtn('← Trước', function () {
             BH.setupPrevStep();
         }, {
             disabled: curIndex <= 0,
             flex: '1'
         }));
 
-        navRow.appendChild(BH.makeBtn('Tiếp →', function () {
+        navRow.appendChild(makeBtn('Tiếp →', function () {
             BH.setupNextStep();
         }, {
             disabled: curIndex >= total - 1,
@@ -794,7 +648,7 @@
         }));
 
         if (BH.setupTemplate && BH.setupTemplate.id === 'custom') {
-            navRow.appendChild(BH.makeBtn('+ Thêm', function () {
+            navRow.appendChild(makeBtn('+ Thêm', function () {
                 BH.setupAddRule();
             }, {
                 color: '#70e0a8',
@@ -803,7 +657,7 @@
                 flex: '1'
             }));
 
-            navRow.appendChild(BH.makeBtn('× Xoá', function () {
+            navRow.appendChild(makeBtn('× Xoá', function () {
                 BH.setupRemoveCurrent();
             }, {
                 color: '#ff6666',
@@ -857,12 +711,6 @@
     BH.render = function () {
         BH.ensureOverlay();
 
-        if (BH.screensSetupMode) {
-            BH.overlayEl.style.display = 'block';
-            BH.renderScreensPanel(BH.overlayEl, getOverlayScale());
-            return;
-        }
-
         if (BH.setupMode) {
             BH.overlayEl.style.display = 'block';
             renderSetupPanel();
@@ -892,7 +740,7 @@
 
         BH.lastMsg = msg;
 
-        if (BH.setupMode || BH.screensSetupMode || BH.overlayState === 'hidden') return;
+        if (BH.setupMode || BH.overlayState === 'hidden') return;
 
         if (BH.overlayState === 'compact') return;
 
@@ -912,12 +760,6 @@
     BH.cycleOverlay = function () {
         if (BH.setupMode) {
             BH.setupCollapsed = !BH.setupCollapsed;
-            BH.render();
-            return;
-        }
-
-        if (BH.screensSetupMode) {
-            BH.screensSetupCollapsed = !BH.screensSetupCollapsed;
             BH.render();
             return;
         }
