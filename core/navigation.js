@@ -7,7 +7,7 @@
     const BH = global.__BH__ = global.__BH__ || {};
 
     // =========================================================
-    // ACTIVITY MAP — Dungeon/Raid dùng template 'rerun'
+    // ACTIVITY MAP
     // =========================================================
 
     BH.ACTIVITY_MAP = {
@@ -23,7 +23,7 @@
     };
 
     // =========================================================
-    // NAVIGATE TO ACTIVITY — KHÔNG check text
+    // NAVIGATE TO ACTIVITY — click vị trí, không check ảnh icon
     // =========================================================
 
     BH.navigateToActivity = function (activityId, callback) {
@@ -38,18 +38,17 @@
             return;
         }
 
-        if (!BH.getScreenRegion(map.icon)) {
-            if (callback) callback(false, 'Missing icon: ' + map.icon);
+        const pos = BH.getScreenRegion(map.icon);
+        if (!pos) {
+            if (callback) callback(false, 'Missing pos: ' + map.icon);
             return;
         }
 
-        const clicked = BH.clickRegion(map.icon);
+        // Click tâm vùng — không check ảnh icon
+        const cx = pos.bufX + Math.floor(pos.width / 2);
+        const cy = pos.bufY + Math.floor(pos.height / 2);
 
-        if (!clicked) {
-            if (callback) callback(false, 'Click icon fail');
-            return;
-        }
-
+        BH.clickAtBuf(cx, cy);
         BH.setMsg('Click icon ' + activityId);
 
         BH.rt.setTimeout(function () {

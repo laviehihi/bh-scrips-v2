@@ -1,14 +1,10 @@
 // ui/screens-panel.js
-// Panel setup Screens — hiện danh sách 30 regions, chia nhóm.
+// Panel setup Screens
 
 (function (global) {
     'use strict';
 
     const BH = global.__BH__ = global.__BH__ || {};
-
-    // =========================================================
-    // RENDER PANEL
-    // =========================================================
 
     BH.renderScreensPanel = function (el, scale) {
         if (BH.screensSetupCollapsed) {
@@ -45,10 +41,7 @@
         btnGroup.style.display = 'flex';
         btnGroup.style.gap = '4px';
 
-        btnGroup.appendChild(BH.makeBtn ? BH.makeBtn('─', function () {
-            BH.screensSetupCollapsed = true;
-            BH.render();
-        }, { padding: '1px 6px', color: '#8ec8ff', border: '1px solid #8ec8ff' }) : makeLocalBtn('─', function () {
+        btnGroup.appendChild(makeLocalBtn('─', function () {
             BH.screensSetupCollapsed = true;
             BH.render();
         }, { padding: '1px 6px', color: '#8ec8ff', border: '1px solid #8ec8ff' }));
@@ -73,11 +66,13 @@
             lineHeight: '1.6'
         });
 
+        const typeLabel = def.type === 'position' ? '📍 Vị trí' : '📷 Ảnh';
+
         const titleLine = document.createElement('div');
         titleLine.style.color = '#fff';
         titleLine.style.fontWeight = '700';
         titleLine.style.marginBottom = '4px';
-        titleLine.textContent = def.label + ' (' + (BH.screensSetupIndex + 1) + '/' + total + ')';
+        titleLine.textContent = def.label + ' (' + (BH.screensSetupIndex + 1) + '/' + total + ') · ' + typeLabel;
         info.appendChild(titleLine);
 
         const hintLine = document.createElement('div');
@@ -97,16 +92,16 @@
             statusLine.textContent = '⏳ Chờ lưu (' + BH.screensSetupPending.width + '×' + BH.screensSetupPending.height + ')';
         } else if (existing) {
             statusLine.style.color = '#70e0a8';
-            statusLine.textContent = '✓ Đã chụp (' + existing.width + '×' + existing.height + ')';
+            statusLine.textContent = '✓ Đã lưu (' + existing.width + '×' + existing.height + ')';
         } else {
             statusLine.style.color = '#ffaa33';
-            statusLine.textContent = '⚠ Chưa chụp';
+            statusLine.textContent = '⚠ Chưa lưu';
         }
 
         info.appendChild(statusLine);
         el.appendChild(info);
 
-        // Buttons row
+        // Buttons
         const row = document.createElement('div');
         Object.assign(row.style, {
             display: 'flex',
@@ -116,7 +111,6 @@
         });
 
         if (BH.screensSetupPending) {
-            // Đang chờ lưu
             row.appendChild(makeLocalBtn('[Lưu]', function () {
                 BH.saveScreensPending();
             }, {
@@ -134,7 +128,6 @@
                 flex: '1'
             }));
         } else {
-            // Chưa chụp
             row.appendChild(makeLocalBtn('[Chụp]', function () {
                 BH.startScreensCapture();
             }, {
@@ -158,7 +151,7 @@
 
         el.appendChild(row);
 
-        // Nav row
+        // Nav
         const navRow = document.createElement('div');
         Object.assign(navRow.style, {
             display: 'flex',
@@ -183,7 +176,7 @@
 
         el.appendChild(navRow);
 
-        // Progress dots (theo nhóm)
+        // Progress dots
         const progressRow = document.createElement('div');
         Object.assign(progressRow.style, {
             display: 'flex',
@@ -216,10 +209,6 @@
         el.appendChild(progressRow);
     };
 
-    // =========================================================
-    // COLLAPSED
-    // =========================================================
-
     function renderCollapsed(el, scale) {
         el.style.width = 'auto';
         el.style.padding = (6 * scale) + 'px ' + (10 * scale) + 'px';
@@ -250,10 +239,6 @@
 
         el.appendChild(row);
     }
-
-    // =========================================================
-    // LOCAL BUTTON (fallback nếu BH.makeBtn không có)
-    // =========================================================
 
     function makeLocalBtn(text, onClick, opts) {
         opts = opts || {};

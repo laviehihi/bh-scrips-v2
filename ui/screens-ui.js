@@ -1,21 +1,16 @@
 // ui/screens-ui.js
 // Setup UI cho Screens — chụp từng vùng một.
-// Flow: bấm [Setup Screens] → thu nhỏ overlay → hiện marker vùng → user kéo → [Lưu] → next.
 
 (function (global) {
     'use strict';
 
     const BH = global.__BH__ = global.__BH__ || {};
 
-    // =========================================================
-    // STATE
-    // =========================================================
-
     BH.screensSetupMode = false;
     BH.screensSetupIndex = 0;
     BH.screensSetupCollapsed = false;
-    BH.screensSetupPending = null;   // { bufX, bufY, width, height }
-    BH.screensSetupRect = null;       // DOM element (vùng dashed)
+    BH.screensSetupPending = null;
+    BH.screensSetupRect = null;
 
     // =========================================================
     // ENTER / EXIT
@@ -91,13 +86,12 @@
     BH.startScreensCapture = function () {
         if (!BH.screensSetupMode) return;
 
-        // Thu nhỏ overlay để user kéo vùng
+        // Ẩn overlay hoàn toàn để không đè lên icon
         BH.screensSetupCollapsed = true;
-        BH.render();
+        if (BH.overlayEl) BH.overlayEl.style.display = 'none';
 
-        BH.setMsg('Kéo vùng trên canvas để chụp');
+        BH.setMsg('Kéo vùng trên canvas');
 
-        // Bật capture mode
         BH.screensCaptureActive = true;
         BH.screensCaptureStart = null;
     };
@@ -113,11 +107,13 @@
 
         BH.screensSetupCollapsed = false;
         BH.screensSetupPending = null;
+
+        if (BH.overlayEl) BH.overlayEl.style.display = 'block';
         BH.render();
     };
 
     // =========================================================
-    // FINISH CAPTURE (user thả chuột)
+    // FINISH CAPTURE
     // =========================================================
 
     BH.finishScreensCapture = function (clientX1, clientY1, clientX2, clientY2) {
@@ -142,11 +138,12 @@
 
         BH.screensSetupPending = { bufX, bufY, width, height };
 
-        // Hiện lại overlay, chờ user bấm [Lưu]
         BH.screensCaptureActive = false;
         BH.screensSetupCollapsed = false;
 
-        // Hiện vùng dashed trên canvas
+        // Hiện lại overlay
+        if (BH.overlayEl) BH.overlayEl.style.display = 'block';
+
         showPendingRect(canvas, bufX, bufY, width, height);
 
         BH.setMsg('Vùng ' + width + '×' + height + ' — bấm [Lưu]');
@@ -154,7 +151,7 @@
     };
 
     // =========================================================
-    // SAVE
+    // SAVE — icon chỉ lưu vị trí, không chụp ảnh
     // =========================================================
 
     BH.saveScreensPending = function () {
@@ -163,7 +160,23 @@
         const def = BH.SCREEN_DEFS[BH.screensSetupIndex];
         const p = BH.screensSetupPending;
 
-        const ok = BH.saveScreenRegion(def.id, p.bufX, p.bufY, p.width, p.height);
+        let ok;
+
+        if (def.type === 'position') {
+            // Chỉ lưu vị trí
+            BH.screens[def.id] = {
+                bufX: p.bufX,
+                bufY: p.bufY,
+                width: p.width,
+                height: p.height,
+                isPosition: true
+            };
+            BH.saveScreens();
+            ok = true;
+        } else {
+            // Chụp ảnh (text, popup)
+            ok = BH.saveScreenRegion(def.id, p.bufX, p.bufY, p.width, p.height);
+        }
 
         BH.screensSetupPending = null;
         clearPendingRect();
@@ -171,7 +184,6 @@
         if (ok) {
             BH.setMsg('✓ Đã lưu ' + def.label);
 
-            // Auto next
             if (BH.screensSetupIndex < BH.SCREEN_DEFS.length - 1) {
                 BH.rt.setTimeout(function () {
                     if (BH.screensSetupMode) {
@@ -191,7 +203,7 @@
     };
 
     // =========================================================
-    // PENDING RECT (vùng dashed cam)
+    // PENDING RECT
     // =========================================================
 
     function showPendingRect(canvas, bufX, bufY, width, height) {
@@ -231,7 +243,7 @@
     }
 
     // =========================================================
-    // MOUSE EVENTS (capture mode)
+    // MOUSE EVENTS
     // =========================================================
 
     document.addEventListener('mousedown', function (e) {
