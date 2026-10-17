@@ -1,5 +1,5 @@
 // core/click.js
-// Dispatch click event chain + reset hover + click flash + key press
+// Dispatch click event chain + reset hover + key press
 
 (function (global) {
     'use strict';
@@ -172,5 +172,12 @@
 
         BH.dispatchFullClick(canvas, pos.clientX, pos.clientY);
     };
+
+    // =========================================================
+    // RESET POINT
+    // =========================================================
+
+    BH.RESET_POINT_X = 20;
+    BH.RESET_POINT_Y = 20;
 
 })(window);

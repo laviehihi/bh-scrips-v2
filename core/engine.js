@@ -12,7 +12,7 @@
     // STATE
     // =========================================================
 
-    BH.activeAuto = null;          // templateId hoặc 'all'
+    BH.activeAuto = null;
     BH.activeTemplateId = null;
     BH.lastActionTime = 0;
 
@@ -21,7 +21,6 @@
 
     BH.AUTO_STOP_TIMEOUT = 3 * 60 * 1000;
 
-    // Navigation state
     BH.currentScreen = null;
     BH.navigationPending = false;
 
@@ -29,6 +28,8 @@
     BH.allContentQueue = [];
     BH.allContentIndex = 0;
     BH.allContentRunning = false;
+    BH.allCurrentActivity = null;
+    BH.allState = 'navigate';  // 'navigate' | 'extra_clicks' | 'flow' | 'next'
 
     // =========================================================
     // RESET RUNTIME STATE
@@ -119,39 +120,35 @@
             return;
         }
 
-        // ===== All Content mode =====
+        // All Content mode
         if (BH.activeAuto === 'all') {
             runAllContentTick();
             return;
         }
 
-        // ===== Single template mode =====
+        // Single template
         const template = BH.getTemplate(BH.activeAuto);
         if (!template) return;
 
-        // Check popup trước
+        // Check popup
         if (BH.detectPopup && !BH.navigationPending) {
             const popup = BH.detectPopup();
 
             if (popup === 'outOfTickets') {
                 BH.handleOutOfTickets(function (success) {
-                    if (!success) {
-                        BH.stopAuto();
-                    }
+                    if (!success) BH.stopAuto();
                 });
                 return;
             }
 
             if (popup === 'leave') {
-                // Click Yes thoát
-                if (BH.matchRegion('popup_leave')) {
-                    BH.clickRegion('popup_leave');
+                if (BH.getScreenRegion('popup_leave_yes')) {
+                    BH.clickRegion('popup_leave_yes');
                 }
                 return;
             }
 
             if (popup === 'confirm') {
-                // Click Yes confirm
                 if (BH.matchRegion('popup_confirm')) {
                     BH.clickRegion('popup_confirm');
                 }
@@ -159,13 +156,12 @@
             }
         }
 
-        // Check screen — nếu không phải màn đúng → navigate
+        // Check screen — navigate nếu ở màn chính
         if (BH.screens && Object.keys(BH.screens).length > 0 && !BH.navigationPending) {
             const screen = BH.detectScreen();
             BH.currentScreen = screen;
 
             if (screen === 'main' && BH.activeAuto && BH.ACTIVITY_MAP[BH.activeAuto]) {
-                // Đang ở màn chính → navigate đến activity
                 BH.navigationPending = true;
 
                 BH.navigateToActivity(BH.activeAuto, function (success) {
@@ -173,6 +169,15 @@
 
                     if (!success) {
                         BH.setMsg('⚠ Không vào được ' + BH.activeAuto);
+                        return;
+                    }
+
+                    // Extra clicks nếu cần
+                    const map = BH.ACTIVITY_MAP[BH.activeAuto];
+                    if (map && map.clicks && map.clicks.length > 0) {
+                        BH.doSequentialClicks(map.clicks, function () {
+                            BH.setMsg('✓ Đã vào ' + BH.activeAuto);
+                        });
                     }
                 });
 
@@ -199,17 +204,26 @@
     };
 
     // =========================================================
-    // ALL CONTENT — chạy tuần tự các activity
+    // ALL CONTENT
     // =========================================================
 
-    BH.ALL_CONTENT_DEFAULT = ['pvp', 'wb', 'raid', 'dungeon', 'invasion', 'expedition', 'gvp', 'trials', 'gauntlet'];
+    BH.ALL_CONTENT_DEFAULT = [
+        'dungeon',
+        'pvp',
+        'invasion',
+        'expedition',
+        'gvp',
+        'trials',
+        'gauntlet',
+        'wb',
+        'raid'
+    ];
 
     BH.startAllContent = function () {
-        if (BH.activeAuto) {
-            BH.stopAuto();
-        }
+        if (BH.activeAuto) BH.stopAuto();
 
-        // Lấy danh sách activity có setup icon
+        BH.loadScreens();
+
         const queue = BH.ALL_CONTENT_DEFAULT.filter(function (id) {
             const map = BH.ACTIVITY_MAP[id];
             if (!map) return false;
@@ -221,11 +235,11 @@
             return;
         }
 
-        BH.loadScreens();
-
         BH.allContentQueue = queue;
         BH.allContentIndex = 0;
         BH.allContentRunning = true;
+        BH.allCurrentActivity = queue[0];
+        BH.allState = 'navigate';
 
         BH.activeAuto = 'all';
         BH.lastActionTime = BH.rt.now();
@@ -237,7 +251,7 @@
 
         BH.overlayState = 'compact';
 
-        BH.setMsg('All Content: ' + queue.join(' → '));
+        BH.setMsg('All: ' + queue.join(' → '));
 
         if (BH.render) BH.render();
     };
@@ -245,22 +259,22 @@
     function runAllContentTick() {
         if (!BH.allContentRunning) return;
 
-        // Check popup
+        // Popup check
         if (BH.detectPopup && !BH.navigationPending) {
             const popup = BH.detectPopup();
 
             if (popup === 'outOfTickets') {
                 BH.handleOutOfTickets(function (success) {
                     if (!success) {
-                        nextActivity('hết vé');
+                        BH.allState = 'next';
                     }
                 });
                 return;
             }
 
             if (popup === 'leave') {
-                if (BH.matchRegion('popup_leave')) {
-                    BH.clickRegion('popup_leave');
+                if (BH.getScreenRegion('popup_leave_yes')) {
+                    BH.clickRegion('popup_leave_yes');
                 }
                 return;
             }
@@ -277,59 +291,86 @@
 
         const currentActivity = BH.allContentQueue[BH.allContentIndex];
         if (!currentActivity) {
-            // Hết queue
             BH.stopAuto();
             BH.setMsg('✓ All Content xong');
             return;
         }
 
-        const screen = BH.detectScreen();
-        BH.currentScreen = screen;
+        // ===== STATE: navigate =====
+        if (BH.allState === 'navigate') {
+            const screen = BH.detectScreen();
+            BH.currentScreen = screen;
 
-        // Nếu đang ở màn chính → navigate đến activity hiện tại
-        if (screen === 'main') {
-            BH.navigationPending = true;
+            if (screen === 'main') {
+                BH.navigationPending = true;
+                BH.setMsg('→ ' + currentActivity);
 
-            BH.navigateToActivity(currentActivity, function (success) {
-                BH.navigationPending = false;
+                BH.navigateToActivity(currentActivity, function (success) {
+                    BH.navigationPending = false;
 
-                if (!success) {
-                    BH.setMsg('⚠ Không vào được ' + currentActivity + ' → skip');
-                    nextActivity('navigate fail');
-                } else {
-                    // Nếu là WB → chạy 3 click trước
-                    if (currentActivity === 'wb') {
-                        BH.doWBClicks(function () {
-                            startActivityFlow(currentActivity);
-                        });
-                    } else if (currentActivity === 'raid') {
-                        BH.doRaidClicks(function () {
-                            startActivityFlow(currentActivity);
-                        });
-                    } else if (currentActivity === 'dungeon') {
-                        BH.doDungeonClicks(function () {
-                            startActivityFlow(currentActivity);
-                        });
-                    } else {
-                        startActivityFlow(currentActivity);
+                    if (!success) {
+                        BH.setMsg('⚠ Không vào được ' + currentActivity);
+                        BH.allState = 'next';
+                        return;
                     }
+
+                    const map = BH.ACTIVITY_MAP[currentActivity];
+                    if (map && map.clicks && map.clicks.length > 0) {
+                        BH.allState = 'extra_clicks';
+                    } else {
+                        BH.allState = 'flow';
+                    }
+                });
+                return;
+            }
+
+            if (screen === currentActivity) {
+                const map = BH.ACTIVITY_MAP[currentActivity];
+                if (map && map.clicks && map.clicks.length > 0) {
+                    BH.allState = 'extra_clicks';
+                } else {
+                    BH.allState = 'flow';
                 }
-            });
+                return;
+            }
 
             return;
         }
 
-        // Đang ở màn activity → chạy flow
-        if (screen === currentActivity) {
+        // ===== STATE: extra_clicks =====
+        if (BH.allState === 'extra_clicks') {
+            const map = BH.ACTIVITY_MAP[currentActivity];
+            if (!map || !map.clicks) {
+                BH.allState = 'flow';
+                return;
+            }
+
+            BH.allState = 'flow';
+
+            BH.doSequentialClicks(map.clicks, function (success) {
+                if (!success) {
+                    BH.setMsg('⚠ Click fail ' + currentActivity);
+                    BH.allState = 'next';
+                } else {
+                    BH.rt.setTimeout(function () {
+                        BH.allState = 'flow';
+                    }, 2000);
+                }
+            });
+            return;
+        }
+
+        // ===== STATE: flow =====
+        if (BH.allState === 'flow') {
             const template = BH.getTemplate(currentActivity);
             if (!template) {
-                nextActivity('no template');
+                BH.allState = 'next';
                 return;
             }
 
             const flowHandler = BH.FLOW_TYPES[template.flow.type];
             if (!flowHandler) {
-                nextActivity('no flow');
+                BH.allState = 'next';
                 return;
             }
 
@@ -341,25 +382,31 @@
                 if (!stepHandler) return;
                 stepHandler.action(step, clickDelay);
             });
-        }
-    }
 
-    function startActivityFlow(activityId) {
-        // Đánh dấu đã vào activity, chờ flow chạy
-        BH.setMsg('▶ ' + activityId);
-    }
-
-    function nextActivity(reason) {
-        BH.allContentIndex++;
-
-        if (BH.allContentIndex >= BH.allContentQueue.length) {
-            BH.stopAuto();
-            BH.setMsg('✓ All Content xong');
+            // Nếu về màn chính → next
+            const screen = BH.detectScreen();
+            if (screen === 'main') {
+                BH.allState = 'next';
+            }
             return;
         }
 
-        BH.setMsg('→ ' + BH.allContentQueue[BH.allContentIndex] + ' (' + reason + ')');
-        BH.lastActionTime = BH.rt.now();
+        // ===== STATE: next =====
+        if (BH.allState === 'next') {
+            BH.allContentIndex++;
+
+            if (BH.allContentIndex >= BH.allContentQueue.length) {
+                BH.stopAuto();
+                BH.setMsg('✓ All Content xong');
+                return;
+            }
+
+            BH.allCurrentActivity = BH.allContentQueue[BH.allContentIndex];
+            BH.allState = 'navigate';
+            BH.lastActionTime = BH.rt.now();
+            BH.setMsg('→ ' + BH.allCurrentActivity);
+            return;
+        }
     }
 
     // =========================================================
@@ -417,7 +464,7 @@
 
         BH.overlayState = 'compact';
 
-        BH.setMsg(template.name + ' started · scan 0.3s · click delay ' + (clickDelay / 1000) + 's');
+        BH.setMsg(template.name + ' started');
 
         if (BH.render) BH.render();
     };
@@ -431,6 +478,8 @@
         BH.allContentRunning = false;
         BH.allContentQueue = [];
         BH.allContentIndex = 0;
+        BH.allCurrentActivity = null;
+        BH.allState = 'navigate';
         BH.navigationPending = false;
 
         if (BH.checkTimerId !== null) {
@@ -463,7 +512,6 @@
     // =========================================================
 
     BH.toggleByHotkey = function (key) {
-        // Phím 8 → All Content
         if (key === '8') {
             if (BH.activeAuto === 'all') {
                 BH.stopAuto();

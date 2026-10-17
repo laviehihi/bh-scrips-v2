@@ -9,7 +9,7 @@
     const OVERLAY_STATES = ['compact', 'expanded', 'hidden'];
 
     BH.overlayState = 'compact';
-    BH.overlayTab = 'basic';   // 'basic' | 'screens'
+    BH.overlayTab = 'basic';
     BH.overlayEl = null;
     BH.lastMsg = '';
     BH.passthrough = false;
@@ -169,20 +169,32 @@
             whiteSpace: 'nowrap'
         });
 
-        const templateId = BH.activeTemplateId || null;
-        const template = templateId ? BH.getTemplate(templateId) : null;
-
         const dot = document.createElement('span');
         dot.textContent = '●';
         dot.style.color = statusColor;
         dot.style.fontWeight = '700';
         row.appendChild(dot);
 
+        // Tên hiển thị
+        let nameText = 'No template';
+
+        if (BH.activeAuto === 'all' && BH.allCurrentActivity) {
+            nameText = 'All · ' + BH.allCurrentActivity;
+        } else {
+            const tid = BH.activeTemplateId || null;
+            const t = tid ? BH.getTemplate(tid) : null;
+            if (t) nameText = t.name;
+        }
+
         const nameSpan = document.createElement('span');
-        nameSpan.textContent = template ? template.name : 'No template';
+        nameSpan.textContent = nameText;
         nameSpan.style.color = statusColor;
         nameSpan.style.fontWeight = '700';
         row.appendChild(nameSpan);
+
+        // WB count
+        const templateId = BH.activeTemplateId || null;
+        const template = templateId ? BH.getTemplate(templateId) : null;
 
         if (template && template.id === 'wb' && BH.activeAuto === 'wb') {
             const countSpan = document.createElement('span');
@@ -277,7 +289,6 @@
 
         el.innerHTML = '';
 
-        // Header
         const header = document.createElement('div');
         Object.assign(header.style, {
             display: 'flex',
@@ -293,7 +304,6 @@
         `;
         el.appendChild(header);
 
-        // Tab bar
         renderTabBar(el, scale);
 
         if (BH.overlayTab === 'screens') {
@@ -334,13 +344,11 @@
     // =========================================================
 
     function renderScreensTab(el, scale) {
-        // Nếu đang setup screens → dùng panel riêng
         if (BH.screensSetupMode) {
             BH.renderScreensPanel(el, scale);
             return;
         }
 
-        // Chưa setup → hiện nút vào setup
         const info = document.createElement('div');
         Object.assign(info.style, {
             fontSize: (10 * scale) + 'px',
@@ -361,7 +369,6 @@
 
         el.appendChild(info);
 
-        // Progress summary theo nhóm
         if (BH.SCREEN_DEFS) {
             const groups = {};
 
@@ -395,7 +402,6 @@
             }
         }
 
-        // Button vào setup
         const btnRow = document.createElement('div');
         Object.assign(btnRow.style, {
             marginTop: (8 * scale) + 'px',
@@ -416,7 +422,6 @@
 
         el.appendChild(btnRow);
 
-        // Log
         renderLog(el, scale);
     }
 
@@ -847,14 +852,12 @@
     BH.render = function () {
         BH.ensureOverlay();
 
-        // Screens setup mode → panel riêng
         if (BH.screensSetupMode) {
             BH.overlayEl.style.display = 'block';
             BH.renderScreensPanel(BH.overlayEl, getOverlayScale());
             return;
         }
 
-        // Template setup mode → panel setup
         if (BH.setupMode) {
             BH.overlayEl.style.display = 'block';
             renderSetupPanel();

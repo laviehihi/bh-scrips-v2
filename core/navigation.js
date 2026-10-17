@@ -1,5 +1,4 @@
 // core/navigation.js
-// Điều hướng giữa các màn hình.
 
 (function (global) {
     'use strict';
@@ -50,9 +49,8 @@
             return;
         }
 
-        BH.setMsg('Đã click icon ' + activityId + ', chờ vào màn...');
+        BH.setMsg('Click icon ' + activityId);
 
-        // Chờ 2s → check text màn
         BH.rt.setTimeout(function () {
             if (!map.text || !BH.getScreenRegion(map.text)) {
                 if (callback) callback(true);
@@ -60,7 +58,6 @@
             }
 
             if (BH.matchRegion(map.text)) {
-                BH.setMsg('✓ Đã vào ' + activityId);
                 if (callback) callback(true);
             } else {
                 if (callback) callback(false, 'Không thấy text ' + activityId);
@@ -100,19 +97,15 @@
     };
 
     // =========================================================
-    // SEQUENTIAL CLICKS WITH VERIFY
+    // SEQUENTIAL CLICKS (delay 1s)
     // =========================================================
-    // Click lần lượt từng nút. Sau mỗi click:
-    // - Nếu nút vẫn còn → retry (tối đa 3 lần)
-    // - Nếu nút biến mất → chuyển sang nút tiếp
-    // - Nếu nút tiếp chưa hiện → chờ (tối đa 5s)
 
     BH.doSequentialClicks = function (regionIds, callback) {
         let index = 0;
         let clickRetry = 0;
         const MAX_CLICK_RETRY = 3;
         let waitRetry = 0;
-        const MAX_WAIT_RETRY = 10;  // 10 × 500ms = 5s
+        const MAX_WAIT_RETRY = 10;
 
         function clickCurrent() {
             if (index >= regionIds.length) {
@@ -127,11 +120,10 @@
                 index++;
                 clickRetry = 0;
                 waitRetry = 0;
-                BH.rt.setTimeout(clickCurrent, 300);
+                BH.rt.setTimeout(clickCurrent, 500);
                 return;
             }
 
-            // Check nút có hiện không
             if (!BH.matchRegion(regionId)) {
                 waitRetry++;
 
@@ -140,7 +132,7 @@
                     index++;
                     clickRetry = 0;
                     waitRetry = 0;
-                    BH.rt.setTimeout(clickCurrent, 300);
+                    BH.rt.setTimeout(clickCurrent, 500);
                     return;
                 }
 
@@ -148,16 +140,14 @@
                 return;
             }
 
-            // Nút hiện → click
             waitRetry = 0;
 
             BH.clickRegion(regionId);
-            BH.setMsg('Click ' + (index + 1) + '/' + regionIds.length + ': ' + regionId);
+            BH.setMsg('Click ' + (index + 1) + '/' + regionIds.length);
 
-            // Chờ 500ms → check nút đã biến mất chưa
+            // Chờ 1s → check nút đã biến mất chưa
             BH.rt.setTimeout(function () {
                 if (BH.matchRegion(regionId)) {
-                    // Nút vẫn còn → retry
                     clickRetry++;
 
                     if (clickRetry >= MAX_CLICK_RETRY) {
@@ -165,26 +155,25 @@
                         index++;
                         clickRetry = 0;
                         waitRetry = 0;
-                        BH.rt.setTimeout(clickCurrent, 300);
+                        BH.rt.setTimeout(clickCurrent, 500);
                         return;
                     }
 
-                    BH.rt.setTimeout(clickCurrent, 500);
+                    BH.rt.setTimeout(clickCurrent, 1000);
                     return;
                 }
 
-                // Nút biến mất → sang nút tiếp
                 index++;
                 clickRetry = 0;
-                BH.rt.setTimeout(clickCurrent, 300);
-            }, 500);
+                BH.rt.setTimeout(clickCurrent, 500);
+            }, 1000);
         }
 
         clickCurrent();
     };
 
     // =========================================================
-    // WB / RAID / DUNGEON CLICKS (wrapper)
+    // WB / RAID / DUNGEON CLICKS
     // =========================================================
 
     BH.doWBClicks = function (callback) {
@@ -217,9 +206,8 @@
 
             escCount++;
 
-            // Nếu có popup_leave → click Yes
             if (BH.matchRegion('popup_leave')) {
-                if (BH.getScreenRegion('popup_leave_yes') && BH.matchRegion('popup_leave_yes')) {
+                if (BH.getScreenRegion('popup_leave_yes')) {
                     BH.clickRegion('popup_leave_yes');
                     BH.setMsg('Click Yes thoát popup');
                 }
