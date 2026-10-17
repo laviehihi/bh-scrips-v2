@@ -9,7 +9,7 @@
     const STORAGE_KEY = 'bh_v3_screens';
 
     // =========================================================
-    // SCREEN DEFINITIONS — danh sách regions cần chụp
+    // SCREEN DEFINITIONS
     // =========================================================
 
     BH.SCREEN_DEFS = [
@@ -40,32 +40,30 @@
         // ===== Popups =====
         { id: 'popup_confirm', group: 'Popups', label: 'Popup Confirm', hint: 'Popup "Xác nhận chưa full team"' },
         { id: 'popup_outOfTickets', group: 'Popups', label: 'Popup Hết vé', hint: 'Popup "Hết vé" / "Out of tickets"' },
-        { id: 'popup_leave', group: 'Popups', label: 'Popup Thoát', hint: 'Popup "Thoát trận" + nút Yes' },
+        { id: 'popup_leave', group: 'Popups', label: 'Popup Thoát (text)', hint: 'Text popup "Thoát trận"' },
+        { id: 'popup_leave_yes', group: 'Popups', label: 'Popup Thoát (nút Yes)', hint: 'Nút Yes trong popup thoát trận' },
 
         // ===== WB clicks =====
-        { id: 'wb_check', group: 'WB', label: 'WB check', hint: 'Text xác nhận đã vào màn WB (sau click icon)' },
         { id: 'wb_click1', group: 'WB', label: 'WB Click 1', hint: 'Nút click thứ 1 khi vào WB' },
-        { id: 'wb_click2', group: 'WB', label: 'WB Click 2', hint: 'Nút click thứ 2' },
-        { id: 'wb_click3', group: 'WB', label: 'WB Click 3', hint: 'Nút click thứ 3' },
+        { id: 'wb_click2', group: 'WB', label: 'WB Click 2', hint: 'Nút click thứ 2 (hiện sau click 1)' },
+        { id: 'wb_click3', group: 'WB', label: 'WB Click 3', hint: 'Nút click thứ 3 (hiện sau click 2)' },
 
         // ===== Raid clicks =====
-        { id: 'raid_check', group: 'Raid', label: 'Raid check', hint: 'Text xác nhận đã vào màn Raid' },
         { id: 'raid_click1', group: 'Raid', label: 'Raid Click 1', hint: 'Nút click thứ 1 khi vào Raid' },
-        { id: 'raid_click2', group: 'Raid', label: 'Raid Click 2', hint: 'Nút click thứ 2' },
-        { id: 'raid_click3', group: 'Raid', label: 'Raid Click 3', hint: 'Nút click thứ 3' },
+        { id: 'raid_click2', group: 'Raid', label: 'Raid Click 2', hint: 'Nút click thứ 2 (hiện sau click 1)' },
+        { id: 'raid_click3', group: 'Raid', label: 'Raid Click 3', hint: 'Nút click thứ 3 (hiện sau click 2)' },
 
         // ===== Dungeon clicks =====
-        { id: 'dungeon_check', group: 'Dungeon', label: 'Dungeon check', hint: 'Text xác nhận đã vào màn Dungeon' },
         { id: 'dungeon_click1', group: 'Dungeon', label: 'Dungeon Click 1', hint: 'Nút click thứ 1 khi vào Dungeon' },
-        { id: 'dungeon_click2', group: 'Dungeon', label: 'Dungeon Click 2', hint: 'Nút click thứ 2' },
-        { id: 'dungeon_click3', group: 'Dungeon', label: 'Dungeon Click 3', hint: 'Nút click thứ 3' }
+        { id: 'dungeon_click2', group: 'Dungeon', label: 'Dungeon Click 2', hint: 'Nút click thứ 2 (hiện sau click 1)' },
+        { id: 'dungeon_click3', group: 'Dungeon', label: 'Dungeon Click 3', hint: 'Nút click thứ 3 (hiện sau click 2)' }
     ];
 
     // =========================================================
     // STATE
     // =========================================================
 
-    BH.screens = {};  // { regionId: { bufX, bufY, width, height, data, tol, minMatch } }
+    BH.screens = {};
 
     // =========================================================
     // CAPTURE / COMPARE
@@ -191,7 +189,7 @@
     };
 
     // =========================================================
-    // CHECK REGION (so sánh với pixel hiện tại)
+    // CHECK REGION
     // =========================================================
 
     BH.checkRegion = function (regionId) {
@@ -228,7 +226,7 @@
     };
 
     // =========================================================
-    // DETECT MAIN SCREEN (4 icon cố định)
+    // DETECT MAIN SCREEN
     // =========================================================
 
     BH.MAIN_ICONS = ['icon_dungeon', 'icon_pvp', 'icon_wb', 'icon_raid'];
@@ -242,20 +240,18 @@
             }
         }
 
-        return matchCount >= 3;  // match ≥ 3/4 → màn chính
+        return matchCount >= 3;
     };
 
     // =========================================================
-    // DETECT SPECIFIC SCREEN
+    // DETECT SCREEN
     // =========================================================
 
     BH.detectScreen = function () {
-        // Check màn chính trước
         if (BH.isMainScreen()) {
             return 'main';
         }
 
-        // Check text các màn
         const screenIds = ['dungeon', 'pvp', 'wb', 'raid', 'invasion', 'expedition', 'gvp', 'trials', 'gauntlet'];
 
         for (let i = 0; i < screenIds.length; i++) {

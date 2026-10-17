@@ -4,32 +4,32 @@
 // ==UserScript==
 // @name         Bit Heroes - Auto Bot v2
 // @namespace    http://tampermonkey.net/
-// @version      2.4.0
+// @version      2.4.1
 // @description  Auto bot cho Bit Heroes — template-based, click overlay, screen detection
 // @match        *://*.kongregate.com/*
 // @match        *://*.bitheroesgame.com/*
 // @run-at       document-start
 // @grant        none
-// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.4.0/core/real-time.js
-// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.4.0/core/utils.js
-// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.4.0/core/pixel.js
-// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.4.0/core/click.js
-// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.4.0/core/storage.js
-// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.4.0/core/speed-hack.js
-// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.4.0/core/screens.js
-// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.4.0/core/navigation.js
-// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.4.0/core/templates.js
-// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.4.0/core/step-types.js
-// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.4.0/core/flow-types.js
-// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.4.0/core/engine.js
-// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.4.0/ui/help.js
-// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.4.0/ui/marker.js
-// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.4.0/ui/magnifier.js
-// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.4.0/ui/setup.js
-// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.4.0/ui/screens-ui.js
-// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.4.0/ui/screens-panel.js
-// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.4.0/ui/overlay.js
-// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.4.0/ui/template-picker.js
+// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.4.1/core/real-time.js
+// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.4.1/core/utils.js
+// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.4.1/core/pixel.js
+// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.4.1/core/click.js
+// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.4.1/core/storage.js
+// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.4.1/core/speed-hack.js
+// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.4.1/core/screens.js
+// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.4.1/core/navigation.js
+// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.4.1/core/templates.js
+// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.4.1/core/step-types.js
+// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.4.1/core/flow-types.js
+// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.4.1/core/engine.js
+// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.4.1/ui/help.js
+// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.4.1/ui/marker.js
+// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.4.1/ui/magnifier.js
+// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.4.1/ui/setup.js
+// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.4.1/ui/screens-ui.js
+// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.4.1/ui/screens-panel.js
+// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.4.1/ui/overlay.js
+// @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.4.1/ui/template-picker.js
 // ==/UserScript==
 
 (function () {
@@ -135,7 +135,6 @@
             return;
         }
 
-        // 1-7 toggle template, 8 = All Content
         if (e.key >= '1' && e.key <= '8') {
             e.preventDefault();
             e.stopImmediatePropagation();
@@ -148,7 +147,6 @@
     function init() {
         window.__BH__.overlayState = 'compact';
 
-        // Load screens trước
         if (window.__BH__.loadScreens) {
             window.__BH__.loadScreens();
         }
@@ -157,7 +155,7 @@
         window.__BH__.loadCalibration(window.__BH__.activeTemplateId);
         window.__BH__.render();
 
-        console.log('[BH Bot v2.4.0] Loaded');
+        console.log('[BH Bot v2.4.1] Loaded');
     }
 
     if (document.readyState === 'loading') {
