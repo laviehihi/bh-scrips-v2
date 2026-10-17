@@ -7,19 +7,19 @@
     const BH = global.__BH__ = global.__BH__ || {};
 
     // =========================================================
-    // ACTIVITY MAP
+    // ACTIVITY MAP — có templateId để map sang template
     // =========================================================
 
     BH.ACTIVITY_MAP = {
-        dungeon: { icon: 'icon_dungeon', text: 'text_dungeon', clicks: ['dungeon_click1', 'dungeon_click2', 'dungeon_click3'] },
-        pvp: { icon: 'icon_pvp', text: 'text_pvp', clicks: null },
-        wb: { icon: 'icon_wb', text: 'text_wb', clicks: ['wb_click1', 'wb_click2', 'wb_click3'] },
-        raid: { icon: 'icon_raid', text: 'text_raid', clicks: ['raid_click1', 'raid_click2', 'raid_click3'] },
-        invasion: { icon: 'icon_invasion', text: 'text_invasion', clicks: null },
-        expedition: { icon: 'icon_expedition', text: 'text_expedition', clicks: null },
-        gvp: { icon: 'icon_gvp', text: 'text_gvp', clicks: null },
-        trials: { icon: 'icon_trials', text: 'text_trials', clicks: null },
-        gauntlet: { icon: 'icon_gauntlet', text: 'text_gauntlet', clicks: null }
+        dungeon: { templateId: 'dungeon', icon: 'icon_dungeon', text: 'text_dungeon', clicks: ['dungeon_click1', 'dungeon_click2', 'dungeon_click3'] },
+        pvp: { templateId: 'pvp', icon: 'icon_pvp', text: 'text_pvp', clicks: null },
+        wb: { templateId: 'wb', icon: 'icon_wb', text: 'text_wb', clicks: ['wb_click1', 'wb_click2', 'wb_click3'] },
+        raid: { templateId: 'raid', icon: 'icon_raid', text: 'text_raid', clicks: ['raid_click1', 'raid_click2', 'raid_click3'] },
+        invasion: { templateId: 'inva', icon: 'icon_invasion', text: 'text_invasion', clicks: null },
+        expedition: { templateId: 'expedition', icon: 'icon_expedition', text: 'text_expedition', clicks: null },
+        gvp: { templateId: 'gvp', icon: 'icon_gvp', text: 'text_gvp', clicks: null },
+        trials: { templateId: 'tg', icon: 'icon_trials', text: 'text_trials', clicks: null },
+        gauntlet: { templateId: 'tg', icon: 'icon_gauntlet', text: 'text_gauntlet', clicks: null }
     };
 
     // =========================================================
@@ -98,7 +98,7 @@
     };
 
     // =========================================================
-    // CLICK SEQUENCE — "thấy là click"
+    // CLICK SEQUENCE
     // =========================================================
 
     BH.doClickSequence = function (regionIds, callback) {
@@ -145,17 +145,14 @@
     };
 
     // =========================================================
-    // HANDLE OUT OF TICKETS — sync cơ bản
+    // HANDLE OUT OF TICKETS
     // =========================================================
-    // ESC 1 lần → chờ 3s → check màn chính.
-    // Chưa về → ESC lần 2 → chờ 3s → ...
-    // Tối đa 5 lần.
 
     BH.handleOutOfTickets = function (callback) {
         BH.setMsg('⚠ Hết vé — ESC để về màn chính');
 
         let escCount = 0;
-        const maxEsc = 5;
+        const maxEsc = 8;
 
         function step() {
             if (escCount >= maxEsc) {
@@ -163,26 +160,37 @@
                 return;
             }
 
-            if (BH.isMainScreen()) {
-                BH.setMsg('✓ Đã về màn chính');
-                if (callback) callback(true);
-                return;
-            }
-
             escCount++;
 
-            // Nếu có popup leave → click Yes
-            if (BH.matchRegion('popup_leave')) {
-                if (BH.getScreenRegion('popup_leave_yes')) {
-                    BH.clickRegion('popup_leave_yes');
-                    BH.setMsg('Click Yes thoát popup (lần ' + escCount + ')');
-                }
-            } else {
-                BH.dispatchKeyPress('Escape');
-                BH.setMsg('ESC lần ' + escCount);
-            }
+            BH.dispatchKeyPress('Escape');
+            BH.setMsg('ESC lần ' + escCount);
 
-            BH.rt.setTimeout(step, 3000);
+            BH.rt.setTimeout(function () {
+                if (BH.matchRegion('popup_leave')) {
+                    if (BH.getScreenRegion('popup_leave_yes')) {
+                        BH.clickRegion('popup_leave_yes');
+                        BH.setMsg('Click Yes thoát popup');
+                    }
+
+                    BH.rt.setTimeout(function () {
+                        if (BH.isMainScreen()) {
+                            BH.setMsg('✓ Đã về màn chính');
+                            if (callback) callback(true);
+                            return;
+                        }
+                        step();
+                    }, 2000);
+                    return;
+                }
+
+                if (BH.isMainScreen()) {
+                    BH.setMsg('✓ Đã về màn chính');
+                    if (callback) callback(true);
+                    return;
+                }
+
+                step();
+            }, 2000);
         }
 
         step();
@@ -193,15 +201,9 @@
     // =========================================================
 
     BH.detectPopup = function () {
-        if (BH.matchRegion('popup_outOfTickets')) {
-            return 'outOfTickets';
-        }
-        if (BH.matchRegion('popup_leave')) {
-            return 'leave';
-        }
-        if (BH.matchRegion('popup_confirm')) {
-            return 'confirm';
-        }
+        if (BH.matchRegion('popup_outOfTickets')) return 'outOfTickets';
+        if (BH.matchRegion('popup_leave')) return 'leave';
+        if (BH.matchRegion('popup_confirm')) return 'confirm';
         return null;
     };
 
