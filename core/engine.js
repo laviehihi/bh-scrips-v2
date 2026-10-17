@@ -32,6 +32,9 @@
     BH._activityOutOfTickets = false;
     BH._outOfTicketsHandling = false;
 
+    // Flag: flow đã click returnHome
+    BH._flowReturnHomeClicked = false;
+
     // =========================================================
     // RESET RUNTIME STATE
     // =========================================================
@@ -46,6 +49,7 @@
         BH._extraClicksRunning = false;
         BH._activityOutOfTickets = false;
         BH._outOfTicketsHandling = false;
+        BH._flowReturnHomeClicked = false;
 
         if (BH.clearPendingClick) {
             BH.clearPendingClick();
@@ -265,6 +269,7 @@
         BH._extraClicksRunning = false;
         BH._activityOutOfTickets = false;
         BH._outOfTicketsHandling = false;
+        BH._flowReturnHomeClicked = false;
 
         BH.activeAuto = 'all';
         BH.lastActionTime = BH.rt.now();
@@ -349,19 +354,6 @@
                 return;
             }
 
-            if (screen === currentActivity) {
-                BH.allCurrentActivity = currentActivity;
-                if (BH.render) BH.render();
-
-                const map = BH.ACTIVITY_MAP[currentActivity];
-                if (map && map.clicks && map.clicks.length > 0) {
-                    BH.allState = 'extra_clicks';
-                } else {
-                    BH.allState = 'flow';
-                }
-                return;
-            }
-
             return;
         }
 
@@ -420,15 +412,10 @@
                 stepHandler.action(step, clickDelay);
             });
 
-            if (BH.detectScreen() === 'main') {
-                if (!BH._mainDetectedAt) {
-                    BH._mainDetectedAt = BH.rt.now();
-                } else if (BH.rt.now() - BH._mainDetectedAt > 10000) {
-                    BH._mainDetectedAt = 0;
-                    BH.allState = 'next';
-                }
-            } else {
-                BH._mainDetectedAt = 0;
+            // Next khi click returnHome thành công
+            if (BH._flowReturnHomeClicked) {
+                BH._flowReturnHomeClicked = false;
+                BH.allState = 'next';
             }
             return;
         }
@@ -448,6 +435,7 @@
             BH._extraClicksRunning = false;
             BH._activityOutOfTickets = false;
             BH._outOfTicketsHandling = false;
+            BH._flowReturnHomeClicked = false;
             BH.lastActionTime = BH.rt.now();
             BH.setMsg('→ ' + BH.allContentQueue[BH.allContentIndex]);
             if (BH.render) BH.render();
@@ -511,6 +499,7 @@
         BH._extraClicksRunning = false;
         BH._activityOutOfTickets = false;
         BH._outOfTicketsHandling = false;
+        BH._flowReturnHomeClicked = false;
 
         if (BH.checkTimerId !== null) {
             BH.rt.clearInterval(BH.checkTimerId);

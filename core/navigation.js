@@ -23,7 +23,7 @@
     };
 
     // =========================================================
-    // NAVIGATE TO ACTIVITY
+    // NAVIGATE TO ACTIVITY — KHÔNG check text
     // =========================================================
 
     BH.navigateToActivity = function (activityId, callback) {
@@ -52,17 +52,9 @@
 
         BH.setMsg('Click icon ' + activityId);
 
+        // Chờ 2s → callback(true) luôn, không check text
         BH.rt.setTimeout(function () {
-            if (!map.text || !BH.getScreenRegion(map.text)) {
-                if (callback) callback(true);
-                return;
-            }
-
-            if (BH.matchRegion(map.text)) {
-                if (callback) callback(true);
-            } else {
-                if (callback) callback(false, 'Không thấy text ' + activityId);
-            }
+            if (callback) callback(true);
         }, 2000);
     };
 
