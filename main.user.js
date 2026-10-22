@@ -8,6 +8,7 @@
 // @description  Auto bot cho Bit Heroes — template-based, click overlay
 // @match        *://*.kongregate.com/*
 // @match        *://*.bitheroesgame.com/*
+// @match        *://d2survivors.lol/*
 // @run-at       document-start
 // @grant        none
 // @require      https://cdn.jsdelivr.net/gh/laviehihi/bh-scrips-v2@v2.3.1/core/real-time.js
